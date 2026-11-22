@@ -1,4 +1,4 @@
-.PHONY: db-up db-down test lint
+.PHONY: db-up db-down migrate test lint
 
 db-up:      ## start Postgres and wait until it accepts connections
 	docker compose up -d --wait db
@@ -11,3 +11,6 @@ test:
 
 lint:
 	uv run ruff check .
+
+migrate:    ## apply migrations to the dev database
+	uv run alembic upgrade head
