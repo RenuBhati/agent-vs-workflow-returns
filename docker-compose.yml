@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: returns
+      POSTGRES_PASSWORD: returns
+      POSTGRES_DB: returns
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d   # creates the test database on first start
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U returns"]
+      interval: 2s
+      retries: 15
+
+volumes:
+  pgdata:
