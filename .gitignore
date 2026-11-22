@@ -1,0 +1,28 @@
+# Private planning docs (PRD, roadmap) — local reference only
+notes/
+
+# Scratch
+tmp/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
