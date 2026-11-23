@@ -5,11 +5,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.db import make_engine
-
-TABLES = (
-    "review_cases, actions, tool_calls, messages, proposals, sessions, "
-    "order_units, orders, skus, styles, shoppers"
-)
+from app.fixtures import ALL_TABLES
 
 
 @pytest.fixture(scope="session")
@@ -28,5 +24,5 @@ def engine():
 def db(engine):
     """Empty tables before each test, so tests never see each other's rows."""
     with engine.begin() as conn:
-        conn.execute(text(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE"))
+        conn.execute(text(f"TRUNCATE {ALL_TABLES} RESTART IDENTITY CASCADE"))
     return engine

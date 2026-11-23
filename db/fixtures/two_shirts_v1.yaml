@@ -1,0 +1,98 @@
+# Fixture two_shirts_v1: a tiny fictional clothing shop.
+#
+# "today" is fixed so date rules replay the same way on any day.
+# Comments say which PRD case each record exists for. If you change
+# this shop, copy it to a new version instead of editing it, so
+# scenarios labelled against v1 still mean what they meant.
+
+today: 2026-12-01            # Europe/London calendar date
+
+styles:
+  - {id: oxford_blue,  name: Oxford shirt, colour: blue}
+  - {id: oxford_white, name: Oxford shirt, colour: white}
+  - {id: chinos_navy,  name: Chinos,       colour: navy}
+  - {id: linen_green,  name: Linen shirt,  colour: green}
+  - {id: jumper_grey,  name: Wool jumper,  colour: grey}
+  - {id: jacket_black, name: Rain jacket,  colour: black}
+  - {id: tee_black,    name: T-shirt,      colour: black}
+
+skus:
+  - {id: oxford_blue_S,  style: oxford_blue,  size: S,  stock: 2}
+  - {id: oxford_blue_M,  style: oxford_blue,  size: M,  stock: 1}   # last unit: Amira and Ella race for it
+  - {id: oxford_blue_L,  style: oxford_blue,  size: L,  stock: 0}   # out of stock: offer alternatives
+  - {id: oxford_white_S, style: oxford_white, size: S,  stock: 2}
+  - {id: oxford_white_M, style: oxford_white, size: M,  stock: 3}
+  - {id: chinos_navy_30, style: chinos_navy,  size: "30", stock: 2}
+  - {id: chinos_navy_32, style: chinos_navy,  size: "32", stock: 2}
+  - {id: chinos_navy_34, style: chinos_navy,  size: "34", stock: 2}
+  - {id: linen_green_M,  style: linen_green,  size: M,  stock: 2}
+  - {id: linen_green_L,  style: linen_green,  size: L,  stock: 2}
+  - {id: jumper_grey_M,  style: jumper_grey,  size: M,  stock: 2}
+  - {id: jumper_grey_L,  style: jumper_grey,  size: L,  stock: 2}
+  - {id: jacket_black_M, style: jacket_black, size: M,  stock: 2}
+  - {id: tee_black_M,    style: tee_black,    size: M,  stock: 4}
+  - {id: tee_black_L,    style: tee_black,    size: L,  stock: 2}
+  - {id: tee_black_XL,   style: tee_black,    size: XL, stock: 0}
+
+shoppers:
+  - id: sh_amira
+    name: Amira
+    persona: amira
+    orders:
+      - id: o_amira_1
+        placed_on: 2026-11-16
+        delivered_on: 2026-11-20             # 11 days before today: eligible
+        units:
+          - {id: u_amira_blue,  sku: oxford_blue_S}    # "exchange the blue one for a medium"
+          - {id: u_amira_white, sku: oxford_white_S}   # makes "the shirt" ambiguous
+
+  - id: sh_ben
+    name: Ben
+    persona: ben
+    orders:
+      - id: o_ben_1
+        placed_on: 2026-10-28
+        delivered_on: 2026-11-01             # +30 days = 2026-12-01 = today: last eligible day
+        units:
+          - {id: u_ben_chinos, sku: chinos_navy_32}
+      - id: o_ben_2
+        placed_on: 2026-10-27
+        delivered_on: 2026-10-31             # +30 days = 2026-11-30: expired yesterday
+        units:
+          - {id: u_ben_linen, sku: linen_green_M}
+
+  - id: sh_chloe
+    name: Chloe
+    persona: chloe
+    orders:
+      - id: o_chloe_1
+        placed_on: 2026-11-21
+        delivered_on: 2026-11-25
+        units:
+          - {id: u_chloe_jumper, sku: jumper_grey_M, final_sale: true}   # final sale; she disputes it
+      - id: o_chloe_2
+        placed_on: 2026-11-28
+        delivered_on: null                   # no delivery record: goes to review
+        units:
+          - {id: u_chloe_jacket, sku: jacket_black_M}
+
+  - id: sh_dev
+    name: Dev
+    persona: dev
+    orders:
+      - id: o_dev_1
+        placed_on: 2026-11-18
+        delivered_on: 2026-11-22
+        units:                               # two identical units: either is acceptable
+          - {id: u_dev_tee_1, sku: tee_black_M}
+          - {id: u_dev_tee_2, sku: tee_black_M}
+
+  - id: sh_ella
+    name: Ella
+    persona: ella
+    orders:
+      - id: o_ella_1
+        placed_on: 2026-11-14
+        delivered_on: 2026-11-18
+        units:
+          - {id: u_ella_blue, sku: oxford_blue_S}      # wants the same last blue M as Amira
