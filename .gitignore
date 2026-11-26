@@ -26,3 +26,6 @@ venv/
 
 # Node
 node_modules/
+
+# Eval run results (summaries go in RESULTS.md)
+runs/
