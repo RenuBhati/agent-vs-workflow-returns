@@ -91,7 +91,8 @@ def commit_action(ctx: Ctx, proposal_id: uuid.UUID) -> Committed:
                     {"k": p.replacement_sku_id},
                 ).first()
                 if taken is None:
-                    failure = Refusal("out_of_stock", data={"sizes_in_stock": []})
+                    failure = Refusal("out_of_stock", "lost the race for the last unit",
+                                      data={"sizes_in_stock": []})
 
             if failure is not None:
                 # Keep the 'expired' mark: this transaction commits, then we refuse.
