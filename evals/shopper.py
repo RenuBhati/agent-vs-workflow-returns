@@ -14,6 +14,24 @@ from evals.scenario import ShopperFacts
 
 REFERENCE = re.compile(r"\bRX-[A-Z0-9]{6}\b")
 
+# For a question tagged "other", read what it actually asks, as a person would.
+# First match wins. The grader still judges by the tag, so a wrong tag still costs
+# the assistant on clarification labels; this only stops the shopper looping.
+READ_QUESTION = [
+    ("offer_review", re.compile(r"\b(person|human|review|someone|colleague|team)\b", re.IGNORECASE)),
+    ("confirm", re.compile(r"\bconfirm\b", re.IGNORECASE)),
+    ("choose_alternative", re.compile(
+        r"out of stock|not (available|in stock)|in stock|instead|unavailable|sold out", re.IGNORECASE)),
+    ("which_size", re.compile(r"\b(which|what) size\b", re.IGNORECASE)),
+    ("which_action", re.compile(r"\breturn\b.*\bor\b.*\bexchange|\bexchange\b.*\bor\b.*"
+                                r"\breturn", re.IGNORECASE)),
+    ("which_item", re.compile(r"\bwhich (item|one|shirt|of)\b", re.IGNORECASE)),
+]
+
+
+def read_question(text: str) -> str:
+    return next((kind for kind, pat in READ_QUESTION if pat.search(text)), "other")
+
 
 @dataclass(frozen=True)
 class Move:
@@ -39,6 +57,8 @@ class SimulatedShopper:
         # ("Anything else?"). Repeating the request would only invite a second action.
         if kind is None or (kind in ("other", "none") and REFERENCE.search(text)):
             return Move("stop")
+        if kind == "other":
+            kind = read_question(text)
         if kind == "confirm":
             if proposal and self._wanted(proposal):
                 return Move("confirm")

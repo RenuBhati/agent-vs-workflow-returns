@@ -82,3 +82,23 @@ def test_shopper_stops_once_it_has_a_reference():
     s = SimulatedShopper(FACTS, "hi")
     assert s.respond("other", None, "Done, reference RX-ABC234. Anything else?").kind == "stop"
     assert s.respond("other", None, "Anything else?").kind == "say"
+
+
+@pytest.mark.parametrize(("text", "kind"), [
+    ("Large is out of stock. Would you like medium instead?", "choose_alternative"),
+    ("Would you like me to pass this to a person to review?", "offer_review"),
+    ("Which size would you like?", "which_size"),
+    ("Do you want to return it or exchange it?", "which_action"),
+    ("Which one do you mean, the blue or the white?", "which_item"),
+    ("Please press Confirm when you're ready.", "confirm"),
+    ("How can I help?", "other"),
+])
+def test_shopper_reads_untagged_questions(text, kind):
+    from evals.shopper import read_question
+    assert read_question(text) == kind
+
+
+def test_shopper_answers_an_untagged_alternatives_question_with_its_fallback():
+    s = SimulatedShopper(FACTS, "hi")
+    move = s.respond("other", None, "Large is out of stock. Would you like M instead?")
+    assert "return" in move.text   # FACTS fallback is a return
