@@ -45,7 +45,11 @@ def propose(ctx: Ctx, unit_id: str, action: Action,
         unit = get_unit(conn, ctx, unit_id)
         decision = decide(conn, ctx, unit, action, replacement_size)
         if not decision.eligible:
-            raise Refusal(decision.reason.value, data={"sizes_in_stock": decision.sizes_in_stock})
+            raise Refusal(
+                decision.reason.value,
+                data={"sizes_in_stock": decision.sizes_in_stock,
+                      "existing_reference": unit.active_reference},
+            )
 
         # Lock the session's live proposal (if any) and retire it.
         conn.execute(
