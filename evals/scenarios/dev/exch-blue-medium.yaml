@@ -1,0 +1,22 @@
+# Worked example of the format. Renu writes and labels the real scenarios.
+id: exch-blue-medium
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: "Exchange the blue one for a medium"
+wordings:
+  - "Can I swap the blue shirt for a size M?"
+shopper_facts:
+  means_units: [u_amira_blue]
+  describes_item_as: "the blue Oxford shirt"
+  wants: exchange
+  size: M
+  if_unavailable: return
+expected:
+  outcome: action
+  acceptable_units: [u_amira_blue]
+  action: exchange
+  replacement_size: M
+  stock_delta: {oxford_blue_M: -1}
+  needs_clarification: []        # "the blue one" is unambiguous: Amira has one blue item
+notes: The clear-cut happy path from the PRD.
