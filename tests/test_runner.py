@@ -76,3 +76,9 @@ def test_runner_stops_at_the_turn_limit(db):
 def test_every_scenario_loads(split):
     assert all(isinstance(s, Scenario) and isinstance(s.expected, Expected)
                for s in load_split(split))
+
+
+def test_shopper_stops_once_it_has_a_reference():
+    s = SimulatedShopper(FACTS, "hi")
+    assert s.respond("other", None, "Done, reference RX-ABC234. Anything else?").kind == "stop"
+    assert s.respond("other", None, "Anything else?").kind == "say"

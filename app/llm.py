@@ -39,7 +39,7 @@ class LLM(Protocol):
     name: str
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None,
-             schema: dict | None = None) -> LLMReply: ...
+             schema: dict | None = None, seed_offset: int = 0) -> LLMReply: ...
 
 
 Transport = Callable[[str, dict, int], dict]
@@ -64,7 +64,7 @@ def _with_note_if_empty(schema: dict) -> dict:
     if schema.get("properties"):
         return schema
     return {"type": "object", "required": [], "properties": {NOTE_FIELD: {
-        "type": "string", "description": "Optional. Leave empty."}}}
+        "type": "string", "description": "In a few words, why you are calling this tool."}}}
 
 
 def _without_note(arguments: dict | None) -> dict:
@@ -95,7 +95,9 @@ class OllamaLLM:
         if not found[self.model].startswith(self.digest):
             raise RuntimeError(f"{self.model} is {found[self.model][:12]}, expected {self.digest}")
 
-    def chat(self, messages, tools=None, schema=None) -> LLMReply:
+    def chat(self, messages, tools=None, schema=None, seed_offset: int = 0) -> LLMReply:
+        """seed_offset lets a caller that retries a step (the agent loop) get a
+        different, but still fixed, sample instead of repeating the same failure."""
         body = {
             "model": self.model, "messages": messages, "stream": False, "think": False,
             "options": {"temperature": settings.llm_temperature, "seed": settings.llm_seed,
@@ -113,7 +115,7 @@ class OllamaLLM:
         for attempt in (1, 2):
             # A retry needs a different seed, or it reproduces the same malformed call.
             # Still fixed per attempt, so runs stay reproducible.
-            body["options"]["seed"] = settings.llm_seed + attempt - 1
+            body["options"]["seed"] = settings.llm_seed + seed_offset + attempt - 1
             try:
                 r = self._post(f"{self.url}/api/chat", body, settings.llm_timeout_s)
                 msg = r.get("message", {})
@@ -150,7 +152,7 @@ class FakeLLM:
         self.replies = list(replies)
         self.calls: list[dict] = []
 
-    def chat(self, messages, tools=None, schema=None) -> LLMReply:
+    def chat(self, messages, tools=None, schema=None, seed_offset: int = 0) -> LLMReply:
         # A copy: callers keep appending to the same history list.
         self.calls.append({"messages": copy.deepcopy(messages), "tools": tools,
                            "schema": schema})

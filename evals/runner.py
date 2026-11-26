@@ -59,7 +59,7 @@ def run_one(engine: Engine, scenario: Scenario, assistant: str, assistants: Assi
         else:
             turns -= 1
             break
-        move = shopper.respond(r.get("question_kind"), r.get("proposal"))
+        move = shopper.respond(r.get("question_kind"), r.get("proposal"), r.get("reply", ""))
     seconds = time.perf_counter() - started
 
     g = grade(engine, scenario, uuid.UUID(sid), before)

@@ -120,3 +120,10 @@ def test_no_argument_tools_get_an_optional_note_that_is_stripped():
     assert "note" in sent_params[0]["properties"]          # added to the empty one
     assert "note" not in sent_params[1]["properties"]      # left alone otherwise
     assert reply.tool_calls == [{"name": "list_orders", "arguments": {}}]   # stripped
+
+
+def test_seed_offset_shifts_both_attempts():
+    bad = http_error(500, '{"error":"XML syntax error on line 3"}')
+    post, sent = scripted(bad, OK)
+    OllamaLLM(transport=post).chat([], seed_offset=4)
+    assert [b["options"]["seed"] for b in sent] == [7 + 4, 7 + 5]

@@ -121,3 +121,18 @@ def test_prose_reply_with_a_waiting_proposal_asks_for_confirm(session):
         call("propose", order_unit_id="u_amira_blue", action="exchange", replacement_size="M"),
         LLMReply(content="I've set up the exchange. Please press the Confirm button.")])
     assert agent.handle(ctx, "Exchange the blue one for a medium", 1).kind == "confirm"
+
+
+class SeedSpy(FakeLLM):
+    def chat(self, messages, tools=None, schema=None, seed_offset=0):
+        self.offsets = getattr(self, "offsets", []) + [seed_offset]
+        return super().chat(messages, tools, schema)
+
+
+def test_each_step_uses_a_different_seed(db):
+    from app.clock import FixedClock as FC
+    fx = reset(db, "two_shirts_v1")
+    ctx = start_session(db, "amira", "agent", "test", FC(fx.today))
+    llm = SeedSpy([LLMReply(error="malformed_tool_call"), respond("Hi!", "none")])
+    AgentAssistant(llm).handle(ctx, "hello", 1)
+    assert llm.offsets == [0, 2]

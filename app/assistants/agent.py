@@ -21,7 +21,7 @@ from app.services.proposals import live_proposal
 from app.tools import TOOLSET_VERSION, call_tool, tool_schemas
 
 NAME = "agent"
-PROMPT_VERSION = "agent-v1"
+PROMPT_VERSION = "agent-v2"
 MAX_STEPS = 8   # model calls per turn
 
 QUESTION_KINDS = ["which_item", "which_size", "which_action", "confirm",
@@ -52,10 +52,12 @@ RESPOND = {
 SYSTEM = """You are the returns and exchanges assistant for a clothing shop. Today is {today}.
 Follow these steps.
 1. Call list_orders first to see the shopper's items.
-2. Work out which item they mean. If more than one item fits, ask which one
-   (which_item). Items in the same order with the same name, colour and size are
+2. Work out which item they mean. If their words fit only one item (by name, colour or
+   size), use it without asking. Ask which one (which_item) only if two or more
+   different items fit. Items in the same order with the same name, colour and size are
    identical: pick either without asking.
 3. If they have not said whether they want a return or an exchange, ask (which_action).
+   Never ask again about something the shopper already told you.
    An exchange needs a size; if they gave none, call check_options and ask which size,
    listing the sizes in stock (which_size).
 4. Call check_options before proposing. If the size they asked for is out of stock, the
@@ -66,10 +68,12 @@ Follow these steps.
    has a return or exchange, explain why and offer to pass it to a person
    (offer_review). Call request_review only if they agree or ask for a person, with the
    most specific reason.
-6. When it is eligible, call propose. Then tell the shopper the summary and ask them to
-   press the Confirm button (confirm). Typing "yes" is not pressing Confirm.
+6. When it is eligible, call propose straight away; do not ask "shall I go ahead?"
+   first. Then tell the shopper the summary and ask them to press the Confirm button
+   (confirm). Typing "yes" is not pressing Confirm.
 7. When told the shopper pressed Confirm, call commit_action with that proposal_id. Say
-   it is done only after commit_action returns a reference, and give the reference.
+   it is done only after commit_action returns a reference, give the reference, and
+   finish (none). Do not offer anything else.
 8. You only handle returns and exchanges of items bought here. For anything else, say so
    briefly (none).
 Reply to the shopper only with respond_to_shopper."""
@@ -108,8 +112,10 @@ class AgentAssistant:
             save_state(ctx, {**state, "history": history})
 
     def _steps(self, ctx: Ctx, history: list[dict], turn: int) -> Reply:
-        for _ in range(MAX_STEPS):
-            reply = self.llm.chat(history, tools=self.tools)
+        for step in range(MAX_STEPS):
+            # Each step samples with its own seed (the client retries use +1), so a
+            # failed step is not replayed identically.
+            reply = self.llm.chat(history, tools=self.tools, seed_offset=2 * step)
             record_call(ctx, self.llm, turn, "agent_step", reply)
             if reply.error:
                 continue   # logged; try the step again within the limit

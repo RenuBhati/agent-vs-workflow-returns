@@ -7,9 +7,12 @@ shopper, so differences in results come from the assistant.
 It never sees the expected outcome, only ShopperFacts.
 """
 
+import re
 from dataclasses import dataclass
 
 from evals.scenario import ShopperFacts
+
+REFERENCE = re.compile(r"\bRX-[A-Z0-9]{6}\b")
 
 
 @dataclass(frozen=True)
@@ -30,9 +33,11 @@ class SimulatedShopper:
     def first(self) -> Move:
         return Move("say", self.opening)
 
-    def respond(self, kind: str | None, proposal: dict | None) -> Move:
+    def respond(self, kind: str | None, proposal: dict | None, text: str = "") -> Move:
         f = self.facts
-        if kind is None:
+        # A shopper who has been given a reference is done, whatever else is asked
+        # ("Anything else?"). Repeating the request would only invite a second action.
+        if kind is None or (kind in ("other", "none") and REFERENCE.search(text)):
             return Move("stop")
         if kind == "confirm":
             if proposal and self._wanted(proposal):
