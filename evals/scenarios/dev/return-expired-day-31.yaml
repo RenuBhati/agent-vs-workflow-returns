@@ -1,0 +1,17 @@
+id: return-expired-day-31
+split: dev
+fixture: two_shirts_v1
+persona: ben
+opening: Can I return my green linen shirt today?
+wordings:
+- I'd like a refund for the green linen shirt.
+- Is it still possible to send back my linen shirt?
+shopper_facts:
+  means_units:
+  - u_ben_linen
+  describes_item_as: the green linen shirt
+  wants: return
+  accepts_review: false
+expected:
+  outcome: no_action
+notes: Block Ben’s linen return on 1 December and explain that 30 November was the last eligible day.

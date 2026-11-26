@@ -1,0 +1,24 @@
+id: oos-ask-for-person
+split: heldout
+fixture: two_shirts_v1
+persona: ella
+opening: Can I swap my blue Oxford for a large?
+wordings:
+- I need an L in the blue Oxford shirt.
+- Please exchange my blue shirt for size L.
+shopper_facts:
+  means_units:
+  - u_ella_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: L
+  if_unavailable: review
+expected:
+  outcome: review
+  acceptable_units:
+  - u_ella_blue
+  review_reason: shopper_request
+  needs_clarification:
+  - choose_alternative
+notes: After the stock explanation, honor the shopper’s request for a person and link the case to the
+  shirt.

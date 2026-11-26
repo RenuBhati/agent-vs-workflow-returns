@@ -1,0 +1,18 @@
+id: final-sale-refuse-review
+split: heldout
+fixture: two_shirts_v1
+persona: chloe
+opening: I'd like to exchange the grey wool jumper for a large.
+wordings:
+- Can I swap my grey jumper for size L?
+- Please exchange the wool jumper from medium to large.
+shopper_facts:
+  means_units:
+  - u_chloe_jumper
+  describes_item_as: the grey wool jumper
+  wants: exchange
+  size: L
+  accepts_review: false
+expected:
+  outcome: no_action
+notes: Respect refusal of a final-sale review and leave the order as it stands.

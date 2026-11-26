@@ -14,7 +14,9 @@ from app.services.review import ReviewReason
 
 SCENARIO_DIR = Path(__file__).resolve().parent / "scenarios"
 
-ClarifyKind = Literal["which_item", "which_size"]
+# Steps the assistant must take before the outcome. which_item / which_size are
+# clarifications; choose_alternative and offer_review are required offers.
+ClarifyKind = Literal["which_item", "which_size", "choose_alternative", "offer_review"]
 
 
 class Strict(BaseModel):
@@ -40,6 +42,7 @@ class Expected(Strict):
     stock_delta: dict[str, int] = {}       # exact; every other sku must not change
     review_reason: ReviewReason | None = None
     needs_clarification: list[ClarifyKind] = []
+    allow_open_proposal: bool = False      # e.g. "yes" typed in chat, Confirm never pressed
 
     @model_validator(mode="after")
     def consistent(self) -> "Expected":

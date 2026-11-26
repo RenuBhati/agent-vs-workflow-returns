@@ -1,0 +1,21 @@
+id: final-sale-accept-review
+split: dev
+fixture: two_shirts_v1
+persona: chloe
+opening: I'd like to return the grey wool jumper. It wasn't marked final sale when I bought it, so I don't
+  think that should apply.
+wordings:
+- Can I send my grey jumper back? I dispute it being final sale.
+- Please return my wool jumper. I don't accept that it was a final-sale item.
+shopper_facts:
+  means_units:
+  - u_chloe_jumper
+  describes_item_as: the grey wool jumper
+  wants: return
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_chloe_jumper
+  review_reason: final_sale_dispute
+notes: Explain the restriction and file one linked review after the shopper accepts.

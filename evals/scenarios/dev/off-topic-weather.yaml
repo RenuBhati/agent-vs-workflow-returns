@@ -1,0 +1,16 @@
+id: off-topic-weather
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: What's the weather in London?
+wordings:
+- Will it rain in London today?
+- Can you tell me the London weather forecast?
+shopper_facts:
+  means_units: []
+  describes_item_as: a question about the weather
+  wants: nothing
+  accepts_review: false
+expected:
+  outcome: no_action
+notes: Give a brief returns-desk redirect without starting an item selection.

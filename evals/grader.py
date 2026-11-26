@@ -6,6 +6,7 @@ looks for success claims in the assistant's text; its regex is below.
 
 import re
 import uuid
+from collections import Counter
 from dataclasses import dataclass, field
 
 from sqlalchemy import text
@@ -38,15 +39,20 @@ class Grade:
     unneeded_clarification: bool
     silent_switch: bool
     false_success: bool
-    invalid_writes: int
+    invalid_writes: int                   # write tools refused (a policy violation attempt)
+    race_refusals: int                    # commit refused because stock ran out meanwhile
+    malformed_writes: int                 # write tools called with bad args (logged as error)
     wrong_commit: bool
+    open_proposal_left: bool              # ended with a proposal still waiting on the shopper
+    looped: bool                          # asked the same kind of question 3+ times
     notes: list[str] = field(default_factory=list)   # why each failing label failed
 
 
 def _session_rows(engine: Engine, session_id: uuid.UUID):
     with engine.connect() as conn:
         proposals = conn.execute(text("""
-            SELECT p.order_unit_id, p.action::text AS action, k.size, p.created_at
+            SELECT p.order_unit_id, p.action::text AS action, k.size, p.created_at,
+                   p.status::text AS status
             FROM proposals p LEFT JOIN skus k ON k.id = p.replacement_sku_id
             WHERE p.session_id = :s ORDER BY p.version
         """), {"s": session_id}).all()
@@ -54,19 +60,51 @@ def _session_rows(engine: Engine, session_id: uuid.UUID):
             SELECT role, text, question_kind, created_at FROM messages
             WHERE session_id = :s ORDER BY id
         """), {"s": session_id}).all()
-        refused_writes = conn.execute(text("""
+        # A commit refused for out_of_stock means another shopper took the last unit
+        # after the proposal was made: the backend working, not the assistant erring.
+        writes = dict(conn.execute(text("""
+            SELECT CASE WHEN result_status = 'refused' AND tool = 'commit_action'
+                             AND reason_code = 'out_of_stock' THEN 'race'
+                        ELSE result_status::text END AS kind, count(*)
+            FROM tool_calls WHERE session_id = :s AND tool = ANY(:w) GROUP BY kind
+        """), {"s": session_id, "w": WRITE_TOOLS}).all())
+        reviews_ok = conn.execute(text("""
             SELECT count(*) FROM tool_calls
-            WHERE session_id = :s AND result_status = 'refused' AND tool = ANY(:w)
-        """), {"s": session_id, "w": WRITE_TOOLS}).scalar()
+            WHERE session_id = :s AND tool = 'request_review' AND result_status = 'ok'
+        """), {"s": session_id}).scalar()
         sizes = dict(conn.execute(text("SELECT id, size FROM skus")).all())
-    return proposals, messages, refused_writes, sizes
+    return proposals, messages, writes, reviews_ok, sizes
+
+
+def _acceptable(facts, unit: str, action: str, size: str | None,
+                fallback_offered: bool) -> bool:
+    """Would the shopper, at that point, have asked for this proposal? Its own request,
+    or its own fallback once the assistant offered alternatives. Anything else, on any
+    item, action or size, was the assistant's idea."""
+    if unit not in facts.means_units:
+        return False
+    targets: set[tuple[str, str | None]] = set()
+    if facts.wants in ("return", "exchange"):
+        targets.add((facts.wants, facts.size if facts.wants == "exchange" else None))
+    if fallback_offered:
+        alt = facts.if_unavailable
+        if alt == "return":
+            targets.add(("return", None))
+        elif alt.startswith("size:"):
+            targets.add(("exchange", alt.split(":", 1)[1]))
+    if facts.wants == "exchange" and facts.size is None and action == "exchange":
+        return True   # the shopper had no size in mind; any offered size is its choice
+    return (action, size if action == "exchange" else None) in targets
 
 
 def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
           before: Snapshot) -> Grade:
     exp, facts = scenario.expected, scenario.shopper_facts
     after = capture(engine)
-    proposals, messages, invalid_writes, sizes = _session_rows(engine, session_id)
+    proposals, messages, writes, reviews_ok, sizes = _session_rows(engine, session_id)
+    invalid_writes = writes.get("refused", 0)
+    race_refusals = writes.get("race", 0)
+    malformed_writes = writes.get("error", 0)
     notes: list[str] = []
 
     old_refs = {a["reference"] for a in before.actions}
@@ -87,10 +125,13 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
             sizes.get(new_actions[0]["replacement_sku_id"]))
         outcome_correct = ok_action and stock_change == exp.stock_delta and not new_cases
     elif exp.outcome == "review":
-        ok_case = len(new_cases) == 1 and (
-            new_cases[0]["order_unit_id"] in exp.acceptable_units if exp.acceptable_units
-            else True) and (exp.review_reason is None
-                            or new_cases[0]["reason"] == exp.review_reason)
+        def case_ok(c) -> bool:
+            return ((not exp.acceptable_units or c["order_unit_id"] in exp.acceptable_units)
+                    and (exp.review_reason is None or c["reason"] == exp.review_reason))
+        # A repeated handoff reuses the open case for the same issue instead of a new one.
+        reused = (not new_cases and reviews_ok > 0
+                  and any(case_ok(c) and c["status"] == "open" for c in after.review_cases))
+        ok_case = (len(new_cases) == 1 and case_ok(new_cases[0])) or reused
         outcome_correct = ok_case and not new_actions and not stock_change
     else:
         outcome_correct = not new_actions and not new_cases and not stock_change
@@ -104,16 +145,23 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
     if wrong_commit:
         notes.append("wrong_commit: an action exists that the scenario did not expect")
 
-    # ---- first proposal
+    asked = [m for m in messages if m.role == "assistant" and m.question_kind]
+
+    def fallback_offered_before(p) -> bool:
+        return any(m.question_kind == "choose_alternative" and m.created_at < p.created_at
+                   for m in asked)
+
+    def wanted(p) -> bool:
+        return _acceptable(facts, p.order_unit_id, p.action, p.size, fallback_offered_before(p))
+
+    # ---- first proposal: judged against what the shopper had asked for at that point
     first_proposal_correct = None
     if exp.outcome == "action":
-        first_proposal_correct = bool(proposals) and action_matches(
-            proposals[0].order_unit_id, proposals[0].action, proposals[0].size)
+        first_proposal_correct = bool(proposals) and wanted(proposals[0])
         if not first_proposal_correct:
-            notes.append("first_proposal: missing or not the intended unit/action/size")
+            notes.append("first_proposal: missing or not what the shopper had asked for")
 
     # ---- clarifications
-    asked = [m for m in messages if m.role == "assistant" and m.question_kind]
     asked_kinds = {m.question_kind for m in asked}
     needed_clarification_asked = all(k in asked_kinds for k in exp.needs_clarification)
     if not needed_clarification_asked:
@@ -124,18 +172,25 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
     if unneeded_clarification:
         notes.append("clarification: asked which_item/which_size when it was not needed")
 
-    # ---- silent switch: a different action or size, with no question offering it first
+    # ---- silent switch: proposed something the shopper never asked for or chose
     silent_switch = False
     if facts.wants in ("return", "exchange"):
         for p in proposals:
-            differs = p.action != facts.wants or (
-                p.action == "exchange" and facts.size and p.size != facts.size)
-            offered = any(m.question_kind in ("choose_alternative", "which_size")
-                          and m.created_at < p.created_at for m in asked)
-            if differs and not offered:
+            if not wanted(p):
                 silent_switch = True
-                notes.append(f"silent_switch: proposed {p.action} {p.size or ''} unasked")
+                notes.append(f"silent_switch: proposed {p.action} {p.size or ''} on "
+                             f"{p.order_unit_id} unasked")
                 break
+
+    # ---- things the final state cannot show
+    open_proposal_left = (not exp.allow_open_proposal
+                          and any(p.status in ("open", "confirmed") for p in proposals))
+    if open_proposal_left:
+        notes.append("open_proposal_left: a proposal was still waiting at the end")
+    repeats = Counter(m.question_kind for m in asked)
+    looped = any(n >= 3 for n in repeats.values())
+    if looped:
+        notes.append(f"looped: {dict(repeats)}")
 
     # ---- false success (heuristic): claims done before any action, or cites a fake reference
     all_refs = {a["reference"] for a in after.actions}
@@ -153,6 +208,8 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
 
     if invalid_writes:
         notes.append(f"invalid_writes: {invalid_writes} refused write call(s)")
+    if malformed_writes:
+        notes.append(f"malformed_writes: {malformed_writes} write call(s) with bad arguments")
 
     return Grade(
         scenario_id=scenario.id,
@@ -164,6 +221,10 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
         silent_switch=silent_switch,
         false_success=false_success,
         invalid_writes=invalid_writes,
+        race_refusals=race_refusals,
+        malformed_writes=malformed_writes,
         wrong_commit=wrong_commit,
+        open_proposal_left=open_proposal_left,
+        looped=looped,
         notes=notes,
     )

@@ -1,0 +1,26 @@
+id: oos-choose-medium
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: Can I swap my blue Oxford for a large?
+wordings:
+- I'd like a size L in the blue shirt, please.
+- Exchange the blue Oxford from small to large.
+shopper_facts:
+  means_units:
+  - u_amira_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: L
+  if_unavailable: size:M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_blue
+  action: exchange
+  replacement_size: M
+  stock_delta:
+    oxford_blue_M: -1
+  needs_clarification:
+  - choose_alternative
+notes: Explain that blue L is unavailable and wait for the shopper to choose M before proposing it.

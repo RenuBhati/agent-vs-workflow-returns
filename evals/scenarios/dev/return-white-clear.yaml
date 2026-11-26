@@ -1,0 +1,19 @@
+id: return-white-clear
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: I'd like to return the white Oxford shirt for a refund.
+wordings:
+- Can I send back the white shirt and get my money back?
+- Please set up a return for my white Oxford.
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: return
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_white
+  action: return
+notes: Understand refund language as a return of the named unit, with zero stock change.

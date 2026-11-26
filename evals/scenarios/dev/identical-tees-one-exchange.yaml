@@ -1,0 +1,25 @@
+id: identical-tees-one-exchange
+split: dev
+fixture: two_shirts_v1
+persona: dev
+opening: Please exchange one of my black T-shirts for a large. Either one is fine.
+wordings:
+- I bought two identical black tees. Can I swap one for size L?
+- I'd like one of the two black mediums in large instead.
+shopper_facts:
+  means_units:
+  - u_dev_tee_1
+  - u_dev_tee_2
+  describes_item_as: either of the identical black T-shirts
+  wants: exchange
+  size: L
+expected:
+  outcome: action
+  acceptable_units:
+  - u_dev_tee_1
+  - u_dev_tee_2
+  action: exchange
+  replacement_size: L
+  stock_delta:
+    tee_black_L: -1
+notes: Treat either black tee as acceptable and exchange exactly one.

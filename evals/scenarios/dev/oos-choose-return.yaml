@@ -1,0 +1,23 @@
+id: oos-choose-return
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: I'd like to exchange the blue Oxford for size L.
+wordings:
+- Can you swap my blue shirt for a large?
+- Could I get the blue Oxford in large instead?
+shopper_facts:
+  means_units:
+  - u_amira_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: L
+  if_unavailable: return
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_blue
+  action: return
+  needs_clarification:
+  - choose_alternative
+notes: Offer a return and wait for the shopper to select it before proposing it.

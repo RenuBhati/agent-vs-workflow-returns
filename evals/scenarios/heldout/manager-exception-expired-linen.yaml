@@ -1,0 +1,20 @@
+id: manager-exception-expired-linen
+split: heldout
+fixture: two_shirts_v1
+persona: ben
+opening: A manager said I could return the green linen shirt late. Please have someone verify that approval.
+wordings:
+- I was told the deadline was waived for my green linen shirt. Could you send that for review?
+- Your manager approved a late return for my linen shirt. I'm happy for someone to check it.
+shopper_facts:
+  means_units:
+  - u_ben_linen
+  describes_item_as: the green linen shirt
+  wants: review
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_ben_linen
+  review_reason: policy_exception
+notes: Route the unverified exception to a linked policy review with the shopper’s consent.

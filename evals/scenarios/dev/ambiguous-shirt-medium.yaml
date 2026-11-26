@@ -1,0 +1,25 @@
+id: ambiguous-shirt-medium
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: Can I exchange my shirt for a medium?
+wordings:
+- I'd like my Oxford in size M instead.
+- Could you swap the shirt I bought for a medium?
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: exchange
+  size: M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_white
+  action: exchange
+  replacement_size: M
+  stock_delta:
+    oxford_white_M: -1
+  needs_clarification:
+  - which_item
+notes: Ask which shirt while retaining the requested size, then exchange the white shirt.

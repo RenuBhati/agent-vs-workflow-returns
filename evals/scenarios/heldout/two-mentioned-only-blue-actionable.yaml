@@ -1,0 +1,24 @@
+id: two-mentioned-only-blue-actionable
+split: heldout
+fixture: two_shirts_v1
+persona: amira
+opening: I'm keeping the white Oxford. Can you exchange the blue one for a medium?
+wordings:
+- The white shirt fits. Please swap the blue Oxford for size M.
+- Blue Oxford to medium, please. I'm happy with the white one.
+shopper_facts:
+  means_units:
+  - u_amira_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_blue
+  action: exchange
+  replacement_size: M
+  stock_delta:
+    oxford_blue_M: -1
+notes: Identify the blue Oxford as the sole exchange target when the white Oxford is explicitly being
+  kept.

@@ -20,5 +20,6 @@ def capture(engine: Engine) -> Snapshot:
             "SELECT reference, order_unit_id, action::text AS action, replacement_sku_id, "
             "created_at FROM actions ORDER BY created_at"))]
         cases = [dict(r._mapping) for r in conn.execute(text(
-            "SELECT id, order_unit_id, reason FROM review_cases ORDER BY created_at"))]
+            "SELECT id, order_unit_id, reason::text AS reason, status::text AS status "
+            "FROM review_cases ORDER BY created_at"))]
     return Snapshot(stock, actions, cases)

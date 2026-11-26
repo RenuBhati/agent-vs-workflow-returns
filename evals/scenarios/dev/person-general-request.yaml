@@ -1,0 +1,16 @@
+id: person-general-request
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: Could I talk to a person about returns?
+wordings:
+- Please put me in touch with someone on the returns team.
+- I'd like a human to help me with a returns question.
+shopper_facts:
+  means_units: []
+  describes_item_as: a general returns question
+  wants: review
+expected:
+  outcome: review
+  review_reason: shopper_request
+notes: Open a general shopper-request case without forcing the shopper to choose an item.

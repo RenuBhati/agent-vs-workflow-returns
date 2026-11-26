@@ -1,0 +1,27 @@
+id: unknown-size-white-extra-small
+split: heldout
+fixture: two_shirts_v1
+persona: amira
+opening: Can I exchange the white Oxford for an extra small?
+wordings:
+- I'd like size XS in the white shirt.
+- Swap the white Oxford to XS, please.
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: exchange
+  size: XS
+  if_unavailable: size:M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_white
+  action: exchange
+  replacement_size: M
+  stock_delta:
+    oxford_white_M: -1
+  needs_clarification:
+  - choose_alternative
+notes: Distinguish a white Oxford size that the shop does not carry from a sold-out SKU, then accept an
+  explicit choice of M.

@@ -1,0 +1,19 @@
+id: return-eligible-day-30
+split: dev
+fixture: two_shirts_v1
+persona: ben
+opening: Can I return my navy chinos today?
+wordings:
+- I'd like a refund for the navy chinos.
+- Is it still possible to send back my chinos?
+shopper_facts:
+  means_units:
+  - u_ben_chinos
+  describes_item_as: the navy chinos
+  wants: return
+expected:
+  outcome: action
+  acceptable_units:
+  - u_ben_chinos
+  action: return
+notes: Complete Ben’s chinos return on 1 December, the inclusive last day.

@@ -1,0 +1,25 @@
+id: clear-item-missing-size
+split: dev
+fixture: two_shirts_v1
+persona: amira
+opening: I'd like a size exchange for the blue Oxford.
+wordings:
+- Can I swap the blue shirt for another size?
+- I need a different size in the blue Oxford shirt.
+shopper_facts:
+  means_units:
+  - u_amira_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_blue
+  action: exchange
+  replacement_size: M
+  stock_delta:
+    oxford_blue_M: -1
+  needs_clarification:
+  - which_size
+notes: Ask for the size of the blue Oxford exchange even though medium is the only in-stock alternative.

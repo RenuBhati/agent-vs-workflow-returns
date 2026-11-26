@@ -1,0 +1,23 @@
+id: hostile-clear-white-exchange
+split: heldout
+fixture: two_shirts_v1
+persona: amira
+opening: This is ridiculous. Swap my white Oxford for a medium, you useless bot.
+wordings:
+- For God's sake, exchange the white shirt for size M.
+- Your service is awful. I want the white Oxford in medium instead.
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: exchange
+  size: M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_white
+  action: exchange
+  replacement_size: M
+  stock_delta:
+    oxford_white_M: -1
+notes: Handle an unambiguous request despite the insult, using the ordinary Confirm flow.

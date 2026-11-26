@@ -1,0 +1,20 @@
+id: jacket-no-delivery-record
+split: heldout
+fixture: two_shirts_v1
+persona: chloe
+opening: My black rain jacket arrived and I'd like to return it.
+wordings:
+- I have the black rain jacket here. Can I send it back?
+- The rain jacket was delivered to me. I'd like a refund.
+shopper_facts:
+  means_units:
+  - u_chloe_jacket
+  describes_item_as: the black rain jacket
+  wants: return
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_chloe_jacket
+  review_reason: no_delivery_record
+notes: Use the missing-record review path when Chloe says the jacket arrived.

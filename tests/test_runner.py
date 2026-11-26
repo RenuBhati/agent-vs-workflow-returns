@@ -36,7 +36,7 @@ def test_shopper_answers_from_facts_and_stops_when_nothing_is_asked():
 
 
 def scenario(**over):
-    base = load_split("dev")[0]
+    base = next(s for s in load_split("dev") if s.id == "exch-blue-medium")
     return base.model_copy(update=over)
 
 
