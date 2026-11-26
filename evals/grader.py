@@ -151,8 +151,27 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
         return any(m.question_kind == "choose_alternative" and m.created_at < p.created_at
                    for m in asked)
 
+    # A scripted change of mind applies from the moment the shopper said it.
+    revisions = []
+    for step in scenario.script:
+        if step.now_wants:
+            said = [m.created_at for m in messages if m.role == "shopper" and m.text == step.say]
+            if said:
+                revisions.append((said[0], step.now_wants))
+
+    def facts_at(t):
+        f = facts
+        for when, r in sorted(revisions, key=lambda x: x[0]):
+            if when < t:
+                f = f.model_copy(update={k: v for k, v in r.model_dump().items()
+                                         if v is not None})
+                if r.wants is not None and r.wants != "exchange":
+                    f = f.model_copy(update={"size": None})
+        return f
+
     def wanted(p) -> bool:
-        return _acceptable(facts, p.order_unit_id, p.action, p.size, fallback_offered_before(p))
+        return _acceptable(facts_at(p.created_at), p.order_unit_id, p.action, p.size,
+                           fallback_offered_before(p))
 
     # ---- first proposal: judged against what the shopper had asked for at that point
     first_proposal_correct = None
@@ -174,13 +193,13 @@ def grade(engine: Engine, scenario: Scenario, session_id: uuid.UUID,
 
     # ---- silent switch: proposed something the shopper never asked for or chose
     silent_switch = False
-    if facts.wants in ("return", "exchange"):
-        for p in proposals:
-            if not wanted(p):
-                silent_switch = True
-                notes.append(f"silent_switch: proposed {p.action} {p.size or ''} on "
-                             f"{p.order_unit_id} unasked")
-                break
+    for p in proposals:
+        # Only a shopper who wanted a return or exchange can be switched away from it.
+        if facts.wants in ("return", "exchange") and not wanted(p):
+            silent_switch = True
+            notes.append(f"silent_switch: proposed {p.action} {p.size or ''} on "
+                         f"{p.order_unit_id} unasked")
+            break
 
     # ---- things the final state cannot show
     open_proposal_left = (not exp.allow_open_proposal

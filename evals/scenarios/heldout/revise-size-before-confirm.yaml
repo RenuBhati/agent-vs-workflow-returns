@@ -1,0 +1,28 @@
+id: revise-size-before-confirm
+split: heldout
+fixture: two_shirts_v1
+persona: ben
+opening: I'd like to exchange the navy chinos for size 30.
+wordings:
+- Can I swap my navy chinos from 32 to 30?
+- Please set up a size-30 exchange for the chinos.
+shopper_facts:
+  means_units:
+  - u_ben_chinos
+  describes_item_as: the navy chinos
+  wants: exchange
+  size: '30'
+expected:
+  outcome: action
+  acceptable_units:
+  - u_ben_chinos
+  action: exchange
+  replacement_size: '34'
+  stock_delta:
+    chinos_navy_34: -1
+script:
+- when: first_proposal
+  say: I meant 34. Please change the exchange to size 34.
+  now_wants:
+    size: '34'
+notes: Correct the size after the first proposal; only the revised proposal may be committed.

@@ -22,11 +22,15 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from app.api import Assistants, create_app, default_assistants
-from app.clock import FixedClock
+from app.clock import Clock, FixedClock
 from app.fixtures import reset
+from app.policy import Action
+from app.services.actions import commit_action
+from app.services.context import start_session
+from app.services.proposals import confirm, propose
 from evals.grader import grade
 from evals.scenario import Scenario, load_split
-from evals.shopper import SimulatedShopper
+from evals.shopper import Move, SimulatedShopper, read_question
 from evals.snapshot import capture
 
 MAX_SHOPPER_TURNS = 8
@@ -36,6 +40,7 @@ RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
 def run_one(engine: Engine, scenario: Scenario, assistant: str, assistants: Assistants,
             opening: str | None = None) -> dict:
     fx = reset(engine, scenario.fixture)
+    _setup(engine, scenario, FixedClock(fx.today))
     before = capture(engine)
     client = TestClient(create_app(engine, FixedClock(fx.today), assistants=assistants),
                         raise_server_exceptions=True)
@@ -45,6 +50,8 @@ def run_one(engine: Engine, scenario: Scenario, assistant: str, assistants: Assi
 
     started = time.perf_counter()
     move, turns, ended = shopper.first(), 0, "assistant_finished"
+    pending = list(scenario.script)
+    stop_after_reply = False
     while True:
         if turns >= MAX_SHOPPER_TURNS:
             ended = "turn_limit"
@@ -59,6 +66,16 @@ def run_one(engine: Engine, scenario: Scenario, assistant: str, assistants: Assi
         else:
             turns -= 1
             break
+        if stop_after_reply:
+            ended = "script_stop"
+            break
+        step = _triggered(pending, r)
+        if step:
+            pending.remove(step)
+            if step.now_wants:
+                shopper.revise(step.now_wants)
+            move, stop_after_reply = Move("say", step.say), step.then == "stop"
+            continue
         move = shopper.respond(r.get("question_kind"), r.get("proposal"), r.get("reply", ""))
     seconds = time.perf_counter() - started
 
@@ -85,6 +102,27 @@ def _transcript(engine: Engine, sid: str) -> list[dict]:
             ORDER BY created_at, type, id
         """), {"s": sid}).all()
     return [{"type": r.type, "who": r.who, "detail": r.detail, "body": r.body} for r in rows]
+
+
+def _setup(engine: Engine, scenario: Scenario, clock: Clock) -> None:
+    """Commit earlier actions through the normal services, each in its own session."""
+    for a in scenario.setup:
+        ctx = start_session(engine, a.persona, "workflow", "setup", clock)  # not a scored run
+        p = propose(ctx, a.unit, Action(a.action), a.size)
+        confirm(ctx, p.id, p.version)
+        commit_action(ctx, p.id)
+
+
+def _triggered(pending: list, r: dict):
+    """The first scripted step whose trigger this assistant reply matches."""
+    kind = r.get("question_kind")
+    if kind == "other":
+        kind = read_question(r.get("reply", ""))
+    waiting = (r.get("proposal") or {}).get("status") == "open"
+    for step in pending:
+        if (step.when == "first_proposal" and waiting) or step.when == f"question:{kind}":
+            return step
+    return None
 
 
 def _usage(engine: Engine, sid: str) -> dict:

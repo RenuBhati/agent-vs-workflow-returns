@@ -1,0 +1,26 @@
+id: already-exchanged-return-original
+split: heldout
+fixture: two_shirts_v1
+persona: ella
+opening: I already exchanged my blue Oxford for a medium. Can I undo that and return the original small?
+wordings:
+- Can you cancel the exchange on my blue Oxford and set up a return for the original shirt?
+- I changed my mind about the exchange on my blue small. I want to return that original shirt.
+shopper_facts:
+  means_units:
+  - u_ella_blue
+  describes_item_as: the original blue Oxford in small
+  wants: return
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_ella_blue
+  review_reason: action_conflict
+setup:
+- persona: ella
+  unit: u_ella_blue
+  action: exchange
+  size: M
+notes: Ella's blue Oxford already has an exchange to M. Undoing it is out of scope, so the conflict goes
+  to review.

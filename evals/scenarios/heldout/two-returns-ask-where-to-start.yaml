@@ -1,0 +1,32 @@
+id: two-returns-ask-where-to-start
+split: heldout
+fixture: two_shirts_v1
+persona: amira
+opening: I'd like to return both Oxfords. If we have to do one at a time, ask me which to start with.
+wordings:
+- I want to send back the blue and white shirts. If this chat handles one at a time, let me choose the
+  first.
+- Both Oxfords need returning. Please ask which to start with if they need separate returns.
+shopper_facts:
+  means_units:
+  - u_amira_blue
+  - u_amira_white
+  describes_item_as: both Oxford shirts
+  wants: return
+expected:
+  outcome: no_action
+  needs_clarification:
+  - which_item
+  allow_open_proposal: true
+script:
+- when: question:which_item
+  say: I'll decide later. Please leave both for now.
+  then: stop
+  now_wants:
+    wants: nothing
+- when: first_proposal
+  say: I'll decide later. Please leave both for now.
+  then: stop
+  now_wants:
+    wants: nothing
+notes: 'One item per request: the assistant should ask which to start with, not pick one.'

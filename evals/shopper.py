@@ -48,6 +48,16 @@ class SimulatedShopper:
         self.accept_action = facts.wants
         self.accept_size = facts.size
 
+    def revise(self, r) -> None:
+        """The shopper changes their mind (a scripted Revision)."""
+        update = {k: v for k, v in r.model_dump().items() if v is not None}
+        self.facts = self.facts.model_copy(update=update)
+        if r.wants is not None:
+            self.accept_action = r.wants
+            self.accept_size = None if r.wants != "exchange" else self.facts.size
+        if r.size is not None:
+            self.accept_size = r.size
+
     def first(self) -> Move:
         return Move("say", self.opening)
 

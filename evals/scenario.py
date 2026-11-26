@@ -58,6 +58,42 @@ class Expected(Strict):
         return self
 
 
+class Revision(Strict):
+    """The shopper changes their mind. Fields left out stay as they were."""
+
+    means_units: list[str] | None = None
+    describes_item_as: str | None = None
+    wants: Action | Literal["review", "nothing"] | None = None
+    size: str | None = None
+
+
+class ScriptStep(Strict):
+    """A scripted shopper move. Fires at most once, the first time its trigger is seen:
+    "first_proposal" (a proposal is waiting for Confirm) or "question:<kind>"."""
+
+    when: str
+    say: str
+    then: Literal["continue", "stop"] = "continue"   # stop: end after the reply to `say`
+    now_wants: Revision | None = None
+
+    @model_validator(mode="after")
+    def known_trigger(self) -> "ScriptStep":
+        kinds = ("which_item", "which_size", "which_action", "confirm",
+                 "choose_alternative", "offer_review", "other")
+        if self.when != "first_proposal" and self.when.removeprefix("question:") not in kinds:
+            raise ValueError(f"unknown trigger {self.when!r}")
+        return self
+
+
+class SetupAction(Strict):
+    """A return or exchange committed before the conversation (and the baseline)."""
+
+    persona: str
+    unit: str
+    action: Action
+    size: str | None = None
+
+
 class Scenario(Strict):
     id: str
     split: Literal["dev", "heldout"]
@@ -67,6 +103,8 @@ class Scenario(Strict):
     wordings: list[str] = []               # alternate phrasings of the opening message
     shopper_facts: ShopperFacts
     expected: Expected
+    setup: list[SetupAction] = []
+    script: list[ScriptStep] = []
     notes: str = ""
 
 
@@ -88,7 +126,10 @@ def _check_against_fixture(s: Scenario) -> None:
         raise ValueError(f"{s.id}: persona {s.persona!r} not in {s.fixture}")
     all_units = {u.id for sh in fx.shoppers for o in sh.orders for u in o.units}
     skus = {k.id for k in fx.skus}
-    for u in s.shopper_facts.means_units + s.expected.acceptable_units:
+    revised = [u for st in s.script if st.now_wants and st.now_wants.means_units
+               for u in st.now_wants.means_units]
+    for u in (s.shopper_facts.means_units + s.expected.acceptable_units + revised
+              + [a.unit for a in s.setup]):
         if u not in all_units:
             raise ValueError(f"{s.id}: unknown unit {u!r}")
     for k in s.expected.stock_delta:

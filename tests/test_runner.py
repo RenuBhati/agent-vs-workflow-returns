@@ -102,3 +102,65 @@ def test_shopper_answers_an_untagged_alternatives_question_with_its_fallback():
     s = SimulatedShopper(FACTS, "hi")
     move = s.respond("other", None, "Large is out of stock. Would you like M instead?")
     assert "return" in move.text   # FACTS fallback is a return
+
+
+# ---------------------------------------------------------------- scripted moves
+
+from evals.scenario import Revision, ScriptStep, SetupAction
+
+
+def with_(**over):
+    return scenario().model_copy(update=over)
+
+
+def test_scripted_correction_is_judged_against_the_new_wish(db):
+    s = with_(
+        script=[ScriptStep(when="first_proposal",
+                           say="Sorry, I meant the white Oxford. I still want a medium.",
+                           now_wants=Revision(means_units=["u_amira_white"]))],
+        expected=Expected(outcome="action", acceptable_units=["u_amira_white"],
+                          action="exchange", replacement_size="M",
+                          stock_delta={"oxford_white_M": -1}))
+    row = run_one(db, s, "workflow", assistants(
+        {"intent": "exchange", "items": [1], "size": "M"},     # blue M proposed
+        {"items": [2], "size": "M"}))                          # the correction
+    assert row["outcome_correct"], row["notes"]
+    assert row["first_proposal_correct"] and not row["silent_switch"]
+
+
+def test_script_can_stop_without_pressing_confirm(db):
+    s = with_(script=[ScriptStep(when="first_proposal", say="Yes, go ahead.", then="stop")],
+              expected=Expected(outcome="no_action", allow_open_proposal=True))
+    row = run_one(db, s, "workflow", assistants(
+        {"intent": "exchange", "items": [1], "size": "M"}, {"yes": True}))
+    assert row["ended"] == "script_stop" and row["outcome_correct"], row["notes"]
+    said = [t["body"] for t in row["transcript"] if t["type"] == "message"]
+    assert said[-2] == "Yes, go ahead." and "Confirm button" in said[-1]
+
+
+def test_question_trigger_fires_on_that_question(db):
+    s = with_(opening="Exchange my shirt for a medium",
+              script=[ScriptStep(when="question:which_item", say="Leave it for now.",
+                                 then="stop", now_wants=Revision(wants="nothing"))],
+              expected=Expected(outcome="no_action", needs_clarification=["which_item"]))
+    row = run_one(db, s, "workflow", assistants({"intent": "exchange", "size": "M"},
+                                                {"intent": "nothing"}))
+    assert row["outcome_correct"] and row["needed_clarification_asked"], row["notes"]
+
+
+def test_setup_actions_exist_before_the_baseline(db):
+    s = with_(persona="ella",
+              setup=[SetupAction(persona="ella", unit="u_ella_blue", action="exchange",
+                                 size="M")],
+              shopper_facts=ShopperFacts(means_units=["u_ella_blue"],
+                                         describes_item_as="the blue Oxford", wants="return"),
+              expected=Expected(outcome="review", acceptable_units=["u_ella_blue"],
+                                review_reason="action_conflict"))
+    row = run_one(db, s, "workflow", assistants({"intent": "return", "items": [1]},
+                                                {"yes": True}))
+    assert row["outcome_correct"], row["notes"]   # the earlier exchange is not "new"
+
+
+def test_unknown_trigger_is_rejected():
+    with pytest.raises(ValueError, match="unknown trigger"):
+        ScriptStep(when="question:whatever", say="hi")

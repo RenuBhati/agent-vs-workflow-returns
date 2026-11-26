@@ -1,0 +1,23 @@
+id: cancel-in-chat-before-confirm
+split: heldout
+fixture: two_shirts_v1
+persona: amira
+opening: Please set up a return for the white Oxford.
+wordings:
+- I'd like to return my white shirt.
+- Can I send back the white Oxford for a refund?
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: return
+expected:
+  outcome: no_action
+  allow_open_proposal: true
+script:
+- when: first_proposal
+  say: Actually, cancel that. I'm keeping the shirt.
+  then: stop
+  now_wants:
+    wants: nothing
+notes: Cancel in chat after the proposal; nothing may be committed or re-proposed.

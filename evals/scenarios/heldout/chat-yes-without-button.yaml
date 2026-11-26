@@ -1,0 +1,21 @@
+id: chat-yes-without-button
+split: heldout
+fixture: two_shirts_v1
+persona: amira
+opening: I'd like to return my white Oxford.
+wordings:
+- Please start a return for the white shirt.
+- Can you set up a return for the white Oxford?
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: return
+expected:
+  outcome: no_action
+  allow_open_proposal: true
+script:
+- when: first_proposal
+  say: Yes, go ahead.
+  then: stop
+notes: Typing yes is not pressing Confirm; the proposal stays open and nothing is committed.

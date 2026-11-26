@@ -1,0 +1,25 @@
+id: revise-action-before-confirm
+split: heldout
+fixture: two_shirts_v1
+persona: ella
+opening: Please exchange the blue Oxford for a medium.
+wordings:
+- Can I swap my blue shirt for size M?
+- I'd like the blue Oxford in medium instead.
+shopper_facts:
+  means_units:
+  - u_ella_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: M
+expected:
+  outcome: action
+  acceptable_units:
+  - u_ella_blue
+  action: return
+script:
+- when: first_proposal
+  say: I've changed my mind. I'd like a refund for the blue Oxford.
+  now_wants:
+    wants: return
+notes: Change from exchange to return after the first proposal; replacement stock must stay untouched.
