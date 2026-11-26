@@ -10,6 +10,7 @@ retry with the same seed repeats it exactly. So a malformed call is retried
 once with the next seed, and otherwise returned as an error that gets counted.
 """
 
+import copy
 import json
 import time
 import urllib.error
@@ -78,8 +79,9 @@ def _is_malformed_tool_call(detail: str) -> bool:
 
 class OllamaLLM:
     def __init__(self, model: str = settings.llm_model, digest: str = settings.llm_digest,
-                 url: str = settings.ollama_url, transport: Transport = _http_post):
-        self.model, self.digest, self.url = model, digest, url
+                 url: str = settings.ollama_url, transport: Transport = _http_post,
+                 num_ctx: int = settings.llm_num_ctx):
+        self.model, self.digest, self.url, self.num_ctx = model, digest, url, num_ctx
         self.name = f"{model}@{digest}"
         self._post = transport   # injectable for tests
 
@@ -97,7 +99,7 @@ class OllamaLLM:
         body = {
             "model": self.model, "messages": messages, "stream": False, "think": False,
             "options": {"temperature": settings.llm_temperature, "seed": settings.llm_seed,
-                        "num_ctx": settings.llm_num_ctx},
+                        "num_ctx": self.num_ctx},
         }
         if tools:
             body["tools"] = [{"type": "function", "function": {
@@ -149,7 +151,9 @@ class FakeLLM:
         self.calls: list[dict] = []
 
     def chat(self, messages, tools=None, schema=None) -> LLMReply:
-        self.calls.append({"messages": messages, "tools": tools, "schema": schema})
+        # A copy: callers keep appending to the same history list.
+        self.calls.append({"messages": copy.deepcopy(messages), "tools": tools,
+                           "schema": schema})
         if not self.replies:
             raise AssertionError("FakeLLM ran out of scripted replies")
         r = self.replies.pop(0)

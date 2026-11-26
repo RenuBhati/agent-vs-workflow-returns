@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from app.assistants.agent import AgentAssistant
 from app.assistants.base import Assistant, Reply
 from app.assistants.workflow import WorkflowAssistant
 from app.clock import Clock, FixedClock
@@ -49,7 +50,9 @@ Assistants = dict[str, Callable[[], Assistant]]
 
 
 def default_assistants() -> Assistants:
-    return {"workflow": lambda: WorkflowAssistant(OllamaLLM())}
+    # The agent's context holds six tool schemas plus tool results, so it needs more room.
+    return {"workflow": lambda: WorkflowAssistant(OllamaLLM()),
+            "agent": lambda: AgentAssistant(OllamaLLM(num_ctx=8192))}
 
 
 def create_app(engine: Engine, clock: Clock, allow_reset: bool = False,
