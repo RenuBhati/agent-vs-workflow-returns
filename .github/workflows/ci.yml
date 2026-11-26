@@ -1,0 +1,52 @@
+# Backend guarantees and grader checks. No model calls: agent evals are run
+# by hand because they cost money and vary between runs.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true   # a newer push cancels the older run
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: returns
+          POSTGRES_PASSWORD: returns
+          POSTGRES_DB: returns_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U returns"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+
+    env:
+      DATABASE_URL: postgresql+psycopg://returns:returns@localhost:5432/returns_test
+      TEST_DATABASE_URL: postgresql+psycopg://returns:returns@localhost:5432/returns_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies from the lockfile
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Tests (migrations, schema, policy, services, concurrency)
+        run: uv run pytest -q
