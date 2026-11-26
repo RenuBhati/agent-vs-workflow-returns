@@ -17,6 +17,7 @@ State (sessions.state) keys:
 """
 
 import json
+import re
 from typing import Literal
 
 from pydantic import BaseModel, ValidationError
@@ -28,7 +29,7 @@ from app.services.messages import add_message
 from app.tools import TOOLSET_VERSION, call_tool
 
 NAME = "workflow"
-PROMPT_VERSION = "workflow-v1"
+PROMPT_VERSION = "workflow-v2"
 
 
 class Extraction(BaseModel):
@@ -96,6 +97,19 @@ def _unit(group: dict) -> dict:
     return next((u for u in group["units"] if not u["active_action"]), group["units"][0])
 
 
+def _words(text_: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", text_.lower()))
+
+
+def _singles_out(state: dict, n: int, message: str) -> bool:
+    """Does the message use a word that fits item n and none of the others?"""
+    if len(state["items"]) == 1:
+        return True
+    mine = _words(next(g["label"] for g in state["items"] if g["n"] == n))
+    others = set().union(*(_words(g["label"]) for g in state["items"] if g["n"] != n))
+    return bool((mine - others) & _words(message))
+
+
 def _items_text(state: dict) -> str:
     return "\n".join(f'{g["n"]}. {g["label"]}' for g in state["items"])
 
@@ -130,7 +144,7 @@ class WorkflowAssistant:
             return say(ctx, "Sorry, I didn't catch that. Could you say it another way?",
                        state["awaiting"] or "other")
 
-        reply = self._merge(ctx, state, ex, turn)
+        reply = self._merge(ctx, state, ex, turn, message)
         if reply is None:
             reply = self._next_step(ctx, state, turn)
         save_state(ctx, state)
@@ -171,34 +185,52 @@ class WorkflowAssistant:
         record_call(ctx, self.llm, turn, "extract", reply)
         return ex
 
-    def _merge(self, ctx: Ctx, state: dict, ex: Extraction, turn: int) -> Reply | None:
+    def _merge(self, ctx: Ctx, state: dict, ex: Extraction, turn: int,
+               message: str) -> Reply | None:
         """Apply what the shopper said. Returns a reply only when the message ends things."""
         awaiting = state["awaiting"]
+        if awaiting not in ("confirm", "choose_alternative", "offer_review"):
+            ex.yes = None   # the model fills yes/no even when nothing was asked
         valid = [n for n in ex.items if any(g["n"] == n for g in state["items"])]
+        # A small model picks an item even for "my shirt". Accept its pick only if the
+        # shopper's words single that item out, or the shopper is answering "which item?".
+        if len(valid) == 1 and awaiting != "which_item" and not _singles_out(
+                state, valid[0], message):
+            valid = []
+        news = bool(valid or ex.size or (ex.intent in ("return", "exchange")
+                                         and ex.intent != state["action"]))
 
-        if ex.wants_person or ex.intent == "review":
-            reason = REVIEW_FOR.get(state["blocked"], "shopper_request")
-            return self._review(ctx, state, reason, turn)
-
+        # Answer to "shall I pass it to a person?" comes first: "no" must never file.
         if awaiting == "offer_review":
-            if ex.yes is True:
-                return self._review(ctx, state, REVIEW_FOR[state["blocked"]], turn)
-            if ex.yes is False or ex.intent == "nothing":
+            if ex.yes is False or (ex.intent == "nothing" and not news):
                 return self._finish(ctx, state, "OK. Nothing has been changed.", None)
-
-        # "Yes" in chat is not a confirmation: only the button can confirm.
-        if (awaiting == "confirm" and ex.yes is True and not valid and not ex.size
-                and ex.intent in (None, state["action"])):
-            return say(ctx, "Please press the Confirm button to go ahead.", "confirm")
-
-        if ex.intent == "nothing" or (ex.yes is False and awaiting in
-                                      ("confirm", "choose_alternative")):
-            return self._finish(ctx, state, "No problem. Nothing has been changed.", None)
+            if ex.yes is True or ex.wants_person or ex.intent == "review":
+                return self._review(ctx, state, REVIEW_FOR[state["blocked"]], turn)
 
         if len(valid) == 1:
             if state["item"] not in (None, valid[0]):
                 state["size"] = None
             state["item"] = valid[0]
+
+        if ex.wants_person or ex.intent == "review":
+            return self._review(ctx, state, self._review_reason(ctx, state, turn), turn)
+
+        # "Yes" in chat is not a confirmation: only the button can confirm.
+        if awaiting == "confirm" and ex.yes is True and not news:
+            return say(ctx, "Please press the Confirm button to go ahead.", "confirm")
+
+        # "No" or "leave it" ends things, unless the same message says what to do instead
+        # ("No, I meant the white one" is a correction, not a cancellation).
+        if not news and (ex.intent == "nothing" or (
+                ex.yes is False and awaiting in ("confirm", "choose_alternative"))):
+            return self._finish(ctx, state, "No problem. Nothing has been changed.", None)
+
+        # Nothing about returns at all, at the start: say what this desk does.
+        if awaiting is None and not news and ex.yes is None and state["item"] is None:
+            return self._finish(ctx, state, "I can only help with returning or exchanging "
+                                "something you've bought here. Tell me which item and what "
+                                "you'd like to do.", None)
+
         if ex.intent in ("return", "exchange"):
             state["action"] = ex.intent
         if ex.size:
@@ -209,6 +241,18 @@ class WorkflowAssistant:
             state["size"] = None
         state["blocked"] = None
         return None
+
+    def _review_reason(self, ctx: Ctx, state: dict, turn: int) -> str:
+        """The most specific reason wins over a plain request for a person."""
+        if state["blocked"] in REVIEW_FOR:
+            return REVIEW_FOR[state["blocked"]]
+        group = _item(state)
+        if group:
+            r = call_tool(ctx, "check_options", {"order_unit_id": _unit(group)["order_unit_id"],
+                                                 "action": state["action"] or "return"}, turn)
+            if r.status == "ok" and r.data["reason"] in REVIEW_FOR:
+                return REVIEW_FOR[r.data["reason"]]
+        return "shopper_request"
 
     def _next_step(self, ctx: Ctx, state: dict, turn: int) -> Reply:
         group = _item(state)

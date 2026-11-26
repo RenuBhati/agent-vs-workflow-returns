@@ -75,7 +75,7 @@ def test_turn_numbers_line_up_across_tools_and_model_calls(chat, db):
 def test_session_records_the_full_config(chat, db):
     _, sid = chat()
     version = q(db, "SELECT config_version FROM sessions WHERE id = :s", s=sid)[0][0]
-    assert version == "workflow-v1+tools-v1+fake@test"
+    assert version == "workflow-v2+tools-v1+fake@test"
 
 
 def test_assistant_not_built_yet_is_501(chat):

@@ -93,7 +93,8 @@ def test_identical_units_are_one_item_and_never_asked_about(session):
 def test_ineligible_explains_offers_review_and_files_it(session, db, persona, item, reason,
                                                         review_reason):
     ctx, wf, _ = session(persona, [{"intent": "return", "items": [item]}, {"yes": True}])
-    r = wf.handle(ctx, "I want to return it", 1)
+    words = {"chloe": "the jumper", "ben": "the linen shirt"}[persona]
+    r = wf.handle(ctx, f"I want to return {words}", 1)
     assert r.kind == "offer_review" and reason in r.text
     r = wf.handle(ctx, "yes please", 2)
     assert r.kind is None and "person" in r.text
@@ -149,3 +150,40 @@ def test_every_step_goes_through_the_logged_tool_path(session, db):
     tools = [r.tool for r in rows(db, "SELECT tool FROM tool_calls ORDER BY id")]
     assert tools == ["list_orders", "check_options", "propose", "commit_action"]
     assert len(rows(db, "SELECT * FROM model_calls")) == 1   # one model call per message
+
+
+def test_a_guessed_item_is_not_accepted_when_the_words_fit_two(session):
+    # "my shirt" fits both of Amira's shirts; the model's pick of item 1 is a guess.
+    ctx, wf, _ = session("amira", [{"intent": "exchange", "items": [1], "size": "M"},
+                                   {"items": [2]}])
+    assert wf.handle(ctx, "Exchange my shirt for a medium", 1).kind == "which_item"
+    r = wf.handle(ctx, "the white one", 2)
+    assert r.kind == "confirm" and "white" in r.text
+
+
+def test_no_with_a_correction_is_not_a_cancellation(session):
+    ctx, wf, _ = session("amira", [{"intent": "exchange", "items": [1], "size": "M"},
+                                   {"yes": False, "items": [2], "size": "M"}])
+    wf.handle(ctx, "Exchange the blue one for a medium", 1)
+    r = wf.handle(ctx, "No, I meant the white one", 2)
+    assert r.kind == "confirm" and "white" in r.text
+
+
+def test_declining_review_never_files_even_if_misread_as_review(session, db):
+    ctx, wf, _ = session("ben", [{"intent": "return", "items": [2]},
+                                 {"yes": False, "intent": "review"}])
+    wf.handle(ctx, "return the linen shirt", 1)
+    assert wf.handle(ctx, "No, thank you.", 2).kind is None
+    assert rows(db, "SELECT * FROM review_cases") == []
+
+
+def test_dispute_in_the_first_message_files_the_specific_reason(session, db):
+    ctx, wf, _ = session("chloe", [{"intent": "review", "items": [2]}])
+    wf.handle(ctx, "I dispute the final sale on my grey jumper", 1)
+    assert rows(db, "SELECT reason::text FROM review_cases")[0].reason == "final_sale_dispute"
+
+
+def test_off_topic_gets_a_redirect_not_a_loop(session):
+    ctx, wf, _ = session("amira", [{"yes": False}])   # yes/no filled in with nothing asked
+    r = wf.handle(ctx, "What's the weather in London?", 1)
+    assert r.kind is None and "return" in r.text

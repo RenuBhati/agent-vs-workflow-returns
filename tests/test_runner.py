@@ -50,7 +50,9 @@ def test_runner_happy_path_passes(db):
                   assistants({"intent": "exchange", "items": [1], "size": "M"}))
     assert row["outcome_correct"] and row["completed"] and not row["notes"]
     assert (row["shopper_turns"], row["ended"], row["tool_calls"]) == (2, "assistant_finished", 4)
-    assert row["config_version"] == "workflow-v1+tools-v1+fake@test"
+    assert row["config_version"] == "workflow-v2+tools-v1+fake@test"
+    kinds = [(t["type"], t["who"]) for t in row["transcript"]]
+    assert kinds[0] == ("message", "shopper") and ("tool", "commit_action") in kinds
 
 
 def test_runner_grades_a_misread_conversation_as_failed_without_a_wrong_commit(db):
@@ -64,7 +66,8 @@ def test_runner_grades_a_misread_conversation_as_failed_without_a_wrong_commit(d
 
 
 def test_runner_stops_at_the_turn_limit(db):
-    stuck = [{} for _ in range(10)]   # the model never understands anything
+    # Amira has two shirts; the model never understands which one is meant.
+    stuck = [{"intent": "exchange"}] + [{} for _ in range(10)]
     row = run_one(db, scenario(), "workflow", assistants(*stuck))
     assert row["ended"] == "turn_limit" and not row["outcome_correct"]
 

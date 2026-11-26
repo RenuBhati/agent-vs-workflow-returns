@@ -67,7 +67,24 @@ def run_one(engine: Engine, scenario: Scenario, assistant: str, assistants: Assi
         "scenario": scenario.id, "assistant": assistant, "opening": shopper.opening,
         "session_id": sid, "ended": ended, "shopper_turns": turns,
         "seconds": round(seconds, 1), **_usage(engine, sid), **asdict(g),
+        # The next run resets the database, so keep what is needed to inspect this one.
+        "transcript": _transcript(engine, sid),
     }
+
+
+def _transcript(engine: Engine, sid: str) -> list[dict]:
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT 'message' AS type, id, created_at, role AS who, question_kind AS detail,
+                   text AS body
+            FROM messages WHERE session_id = :s
+            UNION ALL
+            SELECT 'tool', id, created_at, tool, result_status::text || coalesce(
+                       ':' || reason_code, ''), args::text
+            FROM tool_calls WHERE session_id = :s
+            ORDER BY created_at, type, id
+        """), {"s": sid}).all()
+    return [{"type": r.type, "who": r.who, "detail": r.detail, "body": r.body} for r in rows]
 
 
 def _usage(engine: Engine, sid: str) -> dict:
