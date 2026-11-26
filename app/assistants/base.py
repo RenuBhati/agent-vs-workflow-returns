@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass
+from typing import Protocol
 
 from sqlalchemy import text
 
@@ -13,6 +14,17 @@ from app.services.messages import QuestionKind, add_message
 class Reply:
     text: str
     kind: QuestionKind | None = None   # None = no question; the conversation can end
+
+
+class Assistant(Protocol):
+    """What the API and runner need from either assistant."""
+
+    name: str
+    config_version: str
+
+    def handle(self, ctx: Ctx, message: str, turn: int) -> Reply: ...
+
+    def on_confirm(self, ctx: Ctx, proposal_id: str, turn: int) -> Reply: ...
 
 
 def say(ctx: Ctx, text_: str, kind: QuestionKind | None = None) -> Reply:

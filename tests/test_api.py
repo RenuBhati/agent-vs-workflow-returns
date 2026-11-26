@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from app.api import create_app
 from app.clock import FixedClock
@@ -68,9 +69,13 @@ def test_confirm_button(client, db):
     sid = start(client)
     p = offer(db, sid)
     url = f"/sessions/{sid}/proposals/{p.id}/confirm"
-    assert client.post(url, json={"version": 1}).json() == {"status": "confirmed"}
-    assert client.post(url, json={"version": 1}).json() == {"status": "confirmed"}  # double click
-    assert client.get(f"/sessions/{sid}/proposal").json()["proposal"]["status"] == "confirmed"
+    first = client.post(url, json={"version": 1}).json()
+    assert first["status"] == "confirmed" and "RX-" in first["reply"]   # click, then commit
+    again = client.post(url, json={"version": 1}).json()                # double click
+    assert again["status"] == "committed" and again["reply"] == first["reply"]
+    assert client.get(f"/sessions/{sid}/proposal").json()["proposal"] is None
+    with db.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM actions")).scalar() == 1
 
 
 def test_stale_confirm_is_409_with_code(client, db):

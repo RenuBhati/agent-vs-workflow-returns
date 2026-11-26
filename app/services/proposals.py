@@ -103,8 +103,8 @@ def confirm(ctx: Ctx, proposal_id: uuid.UUID, version: int) -> str:
         p = _lock_own(conn, ctx, proposal_id)
         if p.version != version:
             raise Refusal("stale_proposal", f"shown version {version}, stored {p.version}")
-        if p.status == "confirmed":
-            return "confirmed"  # a double click changes nothing
+        if p.status in ("confirmed", "committed"):
+            return p.status  # a double click changes nothing, even after the commit
         if p.status != "open":
             raise Refusal("stale_proposal", f"proposal is {p.status}")
         conn.execute(

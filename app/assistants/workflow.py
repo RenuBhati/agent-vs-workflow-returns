@@ -25,7 +25,7 @@ from app.assistants.base import Reply, load_state, save_state, say
 from app.llm import LLM, record_call
 from app.services.context import Ctx
 from app.services.messages import add_message
-from app.tools import call_tool
+from app.tools import TOOLSET_VERSION, call_tool
 
 NAME = "workflow"
 PROMPT_VERSION = "workflow-v1"
@@ -107,6 +107,8 @@ class WorkflowAssistant:
 
     def __init__(self, llm: LLM):
         self.llm = llm
+        # Recorded on each session, so every result traces to what produced it.
+        self.config_version = f"{PROMPT_VERSION}+{TOOLSET_VERSION}+{llm.name}"
 
     # -- one shopper message
     def handle(self, ctx: Ctx, message: str, turn: int) -> Reply:
@@ -183,6 +185,11 @@ class WorkflowAssistant:
                 return self._review(ctx, state, REVIEW_FOR[state["blocked"]], turn)
             if ex.yes is False or ex.intent == "nothing":
                 return self._finish(ctx, state, "OK. Nothing has been changed.", None)
+
+        # "Yes" in chat is not a confirmation: only the button can confirm.
+        if (awaiting == "confirm" and ex.yes is True and not valid and not ex.size
+                and ex.intent in (None, state["action"])):
+            return say(ctx, "Please press the Confirm button to go ahead.", "confirm")
 
         if ex.intent == "nothing" or (ex.yes is False and awaiting in
                                       ("confirm", "choose_alternative")):
