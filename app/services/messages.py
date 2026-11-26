@@ -6,8 +6,8 @@ from sqlalchemy import text
 
 from app.services.context import Ctx
 
-QuestionKind = Literal["which_item", "which_size", "confirm", "choose_alternative",
-                       "offer_review", "other"]
+QuestionKind = Literal["which_item", "which_size", "which_action", "confirm",
+                       "choose_alternative", "offer_review", "other"]
 
 
 def add_message(ctx: Ctx, role: Literal["shopper", "assistant"], body: str,

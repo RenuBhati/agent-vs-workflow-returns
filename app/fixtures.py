@@ -19,7 +19,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent.parent / "db" / "fixtures"
 
 # Every table, for TRUNCATE. CASCADE handles foreign keys, so order does not matter.
 ALL_TABLES = (
-    "review_cases, actions, tool_calls, messages, proposals, sessions, "
+    "model_calls, review_cases, actions, tool_calls, messages, proposals, sessions, "
     "order_units, orders, skus, styles, shoppers"
 )
 

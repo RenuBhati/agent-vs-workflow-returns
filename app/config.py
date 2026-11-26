@@ -13,5 +13,14 @@ class Settings(BaseSettings):
     fixture: str = "two_shirts_v1"
     allow_reset: bool = False
 
+    # Local model via Ollama. The digest pins the exact build used for results.
+    ollama_url: str = "http://localhost:11434"
+    llm_model: str = "qwen3.5:4b"
+    llm_digest: str = "7f3251fa6878"
+    llm_temperature: float = 0.2   # not 0: at 0 this model repeats a malformed tool call
+    llm_seed: int = 7
+    llm_num_ctx: int = 4096
+    llm_timeout_s: int = 300
+
 
 settings = Settings()
