@@ -37,3 +37,14 @@ def start_session(
             {"s": shopper_id, "a": assistant, "c": config_version, "t": trace_id},
         ).scalar()
     return Ctx(engine, session_id, shopper_id, trace_id, clock)
+
+
+def load_session(engine: Engine, session_id: uuid.UUID, clock: Clock) -> Ctx:
+    """Rebuild a Ctx from a stored session. The shopper always comes from the row."""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT shopper_id, trace_id FROM sessions WHERE id = :s"), {"s": session_id}
+        ).first()
+    if row is None:
+        raise Refusal("not_found", "no such session")
+    return Ctx(engine, session_id, row.shopper_id, row.trace_id, clock)

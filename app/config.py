@@ -9,5 +9,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://returns:returns@localhost:5433/returns"
     test_database_url: str = "postgresql+psycopg://returns:returns@localhost:5433/returns_test"
 
+    # The shop the app serves, and whether POST /reset may wipe and reload it.
+    fixture: str = "two_shirts_v1"
+    allow_reset: bool = False
+
 
 settings = Settings()

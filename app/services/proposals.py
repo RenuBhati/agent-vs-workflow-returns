@@ -123,3 +123,18 @@ def decline(ctx: Ctx, proposal_id: uuid.UUID) -> str:
             text("UPDATE proposals SET status = 'declined' WHERE id = :p"), {"p": proposal_id}
         )
     return "declined"
+
+
+def live_proposal(ctx: Ctx) -> Proposal | None:
+    """The proposal waiting on the shopper in this session (open or confirmed), if any."""
+    with ctx.engine.connect() as conn:
+        row = conn.execute(
+            text("""
+                SELECT p.id, p.version, p.order_unit_id, p.action::text AS action,
+                       k.size AS replacement_size, p.status::text AS status, p.summary
+                FROM proposals p LEFT JOIN skus k ON k.id = p.replacement_sku_id
+                WHERE p.session_id = :s AND p.status IN ('open', 'confirmed')
+            """),
+            {"s": ctx.session_id},
+        ).first()
+    return Proposal(**row._mapping) if row else None

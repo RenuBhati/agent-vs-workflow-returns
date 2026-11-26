@@ -80,7 +80,7 @@ def _iso(d: date | None) -> str | None:
     return d.isoformat() if d else None
 
 
-def _unit(u: UnitView) -> dict:
+def unit_json(u: UnitView) -> dict:
     return {
         "order_unit_id": u.unit_id, "order_id": u.order_id, "item": u.name,
         "colour": u.colour, "size": u.size, "delivered_on": _iso(u.delivered_on),
@@ -90,12 +90,12 @@ def _unit(u: UnitView) -> dict:
 
 
 def _list_orders(ctx: Ctx, a: NoArgs) -> dict:
-    return {"units": [_unit(u) for u in list_orders(ctx)]}
+    return {"units": [unit_json(u) for u in list_orders(ctx)]}
 
 
 def _check_options(ctx: Ctx, a: CheckOptionsArgs) -> dict:
     unit, d = check_options(ctx, a.order_unit_id, a.action, a.size)
-    return {"unit": _unit(unit), "eligible": d.eligible,
+    return {"unit": unit_json(unit), "eligible": d.eligible,
             "reason": d.reason.value if d.reason else None,
             "sizes_in_stock": d.sizes_in_stock}
 
