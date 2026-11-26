@@ -13,7 +13,9 @@ from app.config import settings
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Keep loggers created before this point (e.g. app.tools) switched on;
+    # fileConfig's default would silently disable them.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 url = config.get_main_option("sqlalchemy.url") or settings.database_url
 
