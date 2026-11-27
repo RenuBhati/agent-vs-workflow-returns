@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Returns assistant</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e3e1dc;
+    --accent: #2f5d50; --accent-ink: #ffffff; --shopper: #e9efe9; --warn: #9a3b2e;
+    --ok: #2f6d3a; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9b9a95; --line: #33322f;
+            --accent: #7fb8a4; --accent-ink: #10201b; --shopper: #24302a; --warn: #e08a7b; --ok: #8fcf98; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 20px;
+           border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; }
+  header .meta { color: var(--muted); font-size: 13px; margin-left: auto; }
+  select, button, input { font: inherit; color: inherit; }
+  select, input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+  button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  main { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px;
+         max-width: 1280px; margin: 0 auto; height: calc(100vh - 64px); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: flex;
+            flex-direction: column; min-height: 0; }
+  section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+               margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  #orders { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  #orders span { display: inline-block; margin: 2px 10px 2px 0; }
+  #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 80%; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; }
+  .msg.shopper { align-self: flex-end; background: var(--shopper); }
+  .msg.assistant { align-self: flex-start; border: 1px solid var(--line); }
+  .msg .tag { display: block; font: 11px var(--mono); color: var(--muted); margin-top: 4px; }
+  .msg.thinking { color: var(--muted); font-style: italic; border: 1px dashed var(--line); }
+  #proposal { margin: 0 16px 12px; padding: 12px 14px; border: 2px solid var(--accent); border-radius: 10px; display: none; }
+  #proposal .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  #proposal .summary { margin: 4px 0 10px; font-weight: 600; }
+  #proposal .buttons { display: flex; gap: 8px; }
+  form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
+  form input { flex: 1; }
+  #trace { flex: 1; overflow-y: auto; padding: 8px 16px 16px; font: 12px/1.5 var(--mono); }
+  .turn { color: var(--muted); margin: 12px 0 4px; font-family: system-ui, sans-serif; font-size: 12px; }
+  .row { padding: 3px 0; border-bottom: 1px dotted var(--line); word-break: break-word; }
+  .row .st-ok { color: var(--ok); } .row .st-bad { color: var(--warn); }
+  .model { color: var(--muted); }
+  #totals { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .empty { color: var(--muted); padding: 16px; }
+  @media (max-width: 820px) { main { grid-template-columns: 1fr; height: auto; } #chat { min-height: 50vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Returns assistant</h1>
+  <label>Shopper <select id="persona"></select></label>
+  <label>Assistant
+    <select id="assistant">
+      <option value="workflow">Fixed workflow</option>
+      <option value="agent">Tool-using agent</option>
+    </select>
+  </label>
+  <button id="start" class="primary">New conversation</button>
+  <button id="reset" hidden>Reset shop</button>
+  <span class="meta" id="meta"></span>
+</header>
+<main>
+  <section>
+    <h2>Conversation</h2>
+    <div id="orders"></div>
+    <div id="chat"><div class="empty">Pick a shopper and an assistant, then start a conversation.</div></div>
+    <div id="proposal">
+      <div class="label">Proposal waiting for you</div>
+      <div class="summary" id="psummary"></div>
+      <div class="buttons">
+        <button id="confirm" class="primary">Confirm</button>
+        <button id="decline">Decline</button>
+      </div>
+    </div>
+    <form id="send">
+      <input id="text" placeholder="Type a message" autocomplete="off" disabled>
+      <button class="primary" id="sendbtn" disabled>Send</button>
+    </form>
+  </section>
+  <section>
+    <h2>Behind the replies</h2>
+    <div id="trace"><div class="empty">Tool calls and model calls appear here.</div></div>
+    <div id="totals"></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let sid = null, proposal = null, busy = false;
+
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { "Content-Type": "application/json" },
+                                body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || data.code || r.statusText);
+  return data;
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function addMessage(role, text, kind) {
+  const chat = $("chat");
+  chat.querySelector(".empty")?.remove();
+  const m = el("div", "msg " + role, text);
+  if (role === "assistant" && kind) m.append(el("span", "tag", "asks: " + kind));
+  chat.append(m);
+  chat.scrollTop = chat.scrollHeight;
+  return m;
+}
+
+function setBusy(on, label) {
+  busy = on;
+  $("text").disabled = on || !sid; $("sendbtn").disabled = on || !sid;
+  $("confirm").disabled = on; $("decline").disabled = on;
+  $("start").disabled = on; $("reset").disabled = on;   // a reset mid-turn would race the turn
+  $("chat").querySelector(".thinking")?.remove();
+  if (on) addMessage("assistant thinking", label || "Thinking…");
+}
+
+function showProposal(p) {
+  proposal = p && p.status === "open" ? p : null;
+  $("proposal").style.display = proposal ? "block" : "none";
+  if (proposal) $("psummary").textContent = proposal.summary;
+}
+
+async function refreshTrace() {
+  if (!sid) return;
+  const t = await api("GET", `/sessions/${sid}/trace`);
+  const box = $("trace"); box.replaceChildren();
+  const turns = new Map();
+  for (const c of t.model_calls) (turns.get(c.turn) || turns.set(c.turn, []).get(c.turn)).push(["model", c]);
+  for (const c of t.tool_calls) (turns.get(c.turn) || turns.set(c.turn, []).get(c.turn)).push(["tool", c]);
+  for (const [turn, items] of [...turns].sort((a, b) => a[0] - b[0])) {
+    box.append(el("div", "turn", "Reply " + turn));
+    for (const [type, c] of items.filter(i => i[0] === "tool")) {
+      const r = el("div", "row");
+      const st = c.result_status === "ok" ? "st-ok" : "st-bad";
+      r.append(el("b", "", c.tool + " "), el("span", st, c.result_status + (c.reason_code ? ":" + c.reason_code : "")),
+               el("div", "", JSON.stringify(c.args)));
+      box.append(r);
+    }
+    const ms = items.filter(i => i[0] === "model").map(i => i[1]);
+    if (ms.length) {
+      const tok = ms.reduce((a, c) => a + (c.prompt_tokens || 0), 0);
+      const sec = ms.reduce((a, c) => a + (c.duration_ms || 0), 0) / 1000;
+      const errs = ms.filter(c => c.error).length;
+      box.append(el("div", "row model", `${ms.length} model call${ms.length > 1 ? "s" : ""}, ` +
+                    `${tok.toLocaleString()} prompt tokens, ${sec.toFixed(1)} s` + (errs ? `, ${errs} errors` : "")));
+    }
+  }
+  if (!turns.size) box.append(el("div", "empty", "Nothing yet."));
+  const all = t.model_calls;
+  $("totals").textContent = `${t.config_version} · ${all.length} model calls · ` +
+    `${all.reduce((a, c) => a + (c.prompt_tokens || 0), 0).toLocaleString()} prompt tokens · ` +
+    `${t.tool_calls.length} tool calls`;
+  box.scrollTop = box.scrollHeight;
+}
+
+async function handle(promise) {
+  try {
+    const r = await promise;
+    setBusy(false);
+    if (r.reply) addMessage("assistant", r.reply, r.question_kind);
+    showProposal(r.proposal);
+  } catch (e) {
+    setBusy(false);
+    addMessage("assistant", "Something went wrong: " + e.message);
+  }
+  await refreshTrace();
+  $("text").focus();
+}
+
+$("start").onclick = async () => {
+  if (busy) return;
+  const s = await api("POST", "/sessions", { persona: $("persona").value, assistant: $("assistant").value });
+  sid = s.session_id; proposal = null;
+  $("chat").replaceChildren(); showProposal(null);
+  const o = await api("GET", `/sessions/${sid}/orders`);
+  const box = $("orders"); box.replaceChildren(el("span", "", "Orders:"));
+  for (const u of o.units) box.append(el("span", "", `${u.colour} ${u.item.toLowerCase()} (${u.size})`));
+  setBusy(false); await refreshTrace();
+  addMessage("assistant", "Hi! I can help with returns and exchanges. What would you like to do?");
+  $("text").focus();
+};
+
+$("send").onsubmit = (e) => {
+  e.preventDefault();
+  const text = $("text").value.trim();
+  if (!text || busy || !sid) return;
+  $("text").value = "";
+  addMessage("shopper", text);
+  setBusy(true);
+  handle(api("POST", `/sessions/${sid}/messages`, { text }));
+};
+
+$("confirm").onclick = () => {
+  if (!proposal || busy) return;
+  addMessage("shopper", "[pressed Confirm]");
+  setBusy(true, "Carrying it out…");
+  handle(api("POST", `/sessions/${sid}/proposals/${proposal.proposal_id}/confirm`, { version: proposal.version }));
+};
+
+$("decline").onclick = async () => {
+  if (!proposal || busy) return;
+  await api("POST", `/sessions/${sid}/proposals/${proposal.proposal_id}/decline`);
+  addMessage("shopper", "[pressed Decline]");
+  showProposal(null);
+  await refreshTrace();
+};
+
+$("reset").onclick = async () => {
+  if (busy) return;
+  setBusy(true, "Resetting the shop…");
+  try { await api("POST", "/reset"); } finally { setBusy(false); }
+  sid = null; showProposal(null); $("orders").replaceChildren(); $("trace").replaceChildren();
+  $("totals").textContent = "";
+  $("chat").replaceChildren(el("div", "empty", "Shop reset. Start a new conversation."));
+  setBusy(false);
+};
+
+(async () => {
+  const p = await api("GET", "/personas");
+  for (const s of p.personas) $("persona").append(new Option(s.name, s.persona));
+  $("meta").textContent = "Shop date: " + p.today;
+  $("reset").hidden = !p.allow_reset;
+})();
+</script>
+</body>
+</html>

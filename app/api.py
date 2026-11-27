@@ -9,10 +9,11 @@ Run locally:  uv run uvicorn app.api:app --reload
 
 import uuid
 from collections.abc import Callable
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -30,6 +31,8 @@ from app.services.errors import Refusal
 from app.services.orders import list_orders
 from app.services.proposals import confirm, decline, live_proposal
 from app.tools import TOOLSET_VERSION, unit_json
+
+STATIC = Path(__file__).resolve().parent / "static"
 
 
 class StartSession(BaseModel):
@@ -100,6 +103,16 @@ def create_app(engine: Engine, clock: Clock, allow_reset: bool = False,
     def health() -> dict:
         return {"ok": True}
 
+    @app.get("/", include_in_schema=False)
+    def page() -> FileResponse:
+        return FileResponse(STATIC / "index.html")
+
+    @app.get("/personas")
+    def personas() -> dict:
+        fx = read_fixture(fixture)
+        return {"today": fx.today.isoformat(), "allow_reset": allow_reset,
+                "personas": [{"persona": sh.persona, "name": sh.name} for sh in fx.shoppers]}
+
     @app.post("/sessions", status_code=201)
     def new_session(body: StartSession) -> dict:
         factory = assistants.get(body.assistant)
@@ -124,6 +137,23 @@ def create_app(engine: Engine, clock: Clock, allow_reset: bool = False,
                 "SELECT role, text, question_kind FROM messages WHERE session_id = :s "
                 "ORDER BY id"), {"s": c.session_id}).all()
         return {"messages": [dict(r._mapping) for r in rows]}
+
+    @app.get("/sessions/{session_id}/trace")
+    def trace(session_id: uuid.UUID) -> dict:
+        """What happened behind the replies: business tool calls and model calls."""
+        c = ctx(session_id)
+        with engine.connect() as conn:
+            tools = conn.execute(text(
+                "SELECT turn, tool, args, result_status, reason_code, duration_ms "
+                "FROM tool_calls WHERE session_id = :s ORDER BY id"), {"s": c.session_id}).all()
+            calls = conn.execute(text(
+                "SELECT turn, purpose, prompt_tokens, output_tokens, duration_ms, error "
+                "FROM model_calls WHERE session_id = :s ORDER BY id"), {"s": c.session_id}).all()
+            cfg = conn.execute(text("SELECT assistant, config_version FROM sessions "
+                                    "WHERE id = :s"), {"s": c.session_id}).one()
+        return {"assistant": cfg.assistant, "config_version": cfg.config_version,
+                "tool_calls": [dict(r._mapping) for r in tools],
+                "model_calls": [dict(r._mapping) for r in calls]}
 
     @app.post("/sessions/{session_id}/messages")
     def send_message(session_id: uuid.UUID, body: ShopperMessage) -> dict:

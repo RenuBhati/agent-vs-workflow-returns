@@ -83,3 +83,25 @@ def test_assistant_not_built_yet_is_501(chat):
     sid = client.post("/sessions", json={"persona": "amira",
                                          "assistant": "agent"}).json()["session_id"]
     assert client.post(f"/sessions/{sid}/messages", json={"text": "hi"}).status_code == 501
+
+
+# ---------------------------------------------------------------- demo page
+
+def test_page_and_personas_are_served(chat):
+    client, _ = chat()
+    page = client.get("/")
+    assert page.status_code == 200 and "Returns assistant" in page.text
+    p = client.get("/personas").json()
+    assert p["today"] == TODAY.isoformat() and p["allow_reset"] is False
+    assert {"persona": "amira", "name": "Amira"} in p["personas"]
+
+
+def test_trace_shows_tool_and_model_calls_for_this_session_only(chat):
+    client, sid = chat({"intent": "exchange", "items": [1], "size": "M"})
+    say(client, sid, "Exchange the blue Oxford for a medium")
+    t = client.get(f"/sessions/{sid}/trace").json()
+    assert t["assistant"] == "workflow" and t["config_version"].startswith("workflow-")
+    assert [c["tool"] for c in t["tool_calls"]][-1] == "propose"
+    assert len(t["model_calls"]) == 1 and t["model_calls"][0]["purpose"] == "extract"
+    other = client.post("/sessions", json={"persona": "ben", "assistant": "workflow"}).json()
+    assert client.get(f"/sessions/{other['session_id']}/trace").json()["tool_calls"] == []

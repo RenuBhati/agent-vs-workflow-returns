@@ -42,6 +42,17 @@ So the backend guarantees are tested directly against the API and database, sepa
 - **Held-out set**: both systems are frozen before the held-out scenarios are run. Each scenario is run with several phrasings and repeats, and results are reported with numerators and denominators.
 - **Costs and misses published**: accuracy, model calls, latency and estimated cost per system, including the cases where each one failed.
 
+## Try it
+
+Needs Docker, [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com) with `qwen3.5:4b` pulled.
+
+```bash
+make db-up && make migrate && make seed
+make serve        # then open http://localhost:8000
+```
+
+Pick a shopper and an assistant, chat, and press Confirm on a proposal. The right-hand panel shows each tool call and the model calls, tokens and time behind every reply.
+
 ## Scope
 
 The shop, shoppers and orders are synthetic. Returns and exchanges are simulated. There are no real purchases, payments, shipping, warehouse operations or identity checks.
