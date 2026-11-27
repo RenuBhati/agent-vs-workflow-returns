@@ -9,7 +9,7 @@ This project builds a returns-and-exchanges assistant for a fictional clothing s
 
 Both versions use the same model, data, store policy and backend services. The same scenarios are run through both and graded on what ended up in the database, not on what the assistant said. If the simpler workflow wins, that counts as a result too.
 
-> **Status: planning.** Nothing is built or measured yet. This README will link the demo, replays and results as each one is published.
+> **Status: both assistants built and evaluated.** On 51 held-out conversations each, both reached the right final state about equally often (workflow 45, agent 44). The workflow was cleaner (45 vs 31 clean), about 15× faster and used about 32× fewer prompt tokens. See [RESULTS.md](RESULTS.md), [FAILURES.md](FAILURES.md) and [DECISIONS.md](DECISIONS.md). The demo UI and the harness experiment are next.
 
 ## What the assistant does
 
@@ -48,9 +48,9 @@ The shop, shoppers and orders are synthetic. Returns and exchanges are simulated
 
 ## Roadmap
 
-- [ ] Store policy, seeded orders and the first labelled scenarios
-- [ ] Vertical slice: one exchange, one ambiguous request and one declined proposal, replayed end to end
-- [ ] Both implementations running on the same services, with backend tests and grader self-tests passing
+- [x] Store policy, seeded orders and the first labelled scenarios
+- [x] Vertical slice: one exchange, one ambiguous request and one declined proposal, replayed end to end
+- [x] Both implementations running on the same services, with backend tests and grader self-tests passing
 - [ ] Testing with real people
 - [ ] One controlled harness experiment (change a tool design, keep model and tasks fixed)
-- [ ] Hosted demo, replays, results and a short walkthrough
+- [ ] Hosted demo, replays, results and a short walkthrough (results published)
