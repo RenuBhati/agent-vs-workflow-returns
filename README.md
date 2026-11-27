@@ -11,9 +11,9 @@ Both versions use the same model, data, store policy and backend services. The s
 
 > **Status: both assistants built and evaluated.** On 51 held-out conversations each, both reached the right final state about equally often (workflow 45, agent 44). The workflow was cleaner (45 vs 31 clean), about 15× faster and used about 32× fewer prompt tokens. See [RESULTS.md](RESULTS.md), [FAILURES.md](FAILURES.md) and [DECISIONS.md](DECISIONS.md). The harness experiment is next.
 
-[![Watch the 6-minute technical walkthrough](docs/demo-poster.jpg)](docs/demo.mp4)
+[![Both assistants running live: the workflow, the agent, and a typed “yes” that commits nothing. Click for the full narrated walkthrough.](docs/demo-preview.webp)](docs/demo.mp4)
 
-A 6-minute walkthrough of the stack and architecture, how each assistant works, both of them running live, the safety design, the evaluation harness, results and lessons. Narration is Kokoro TTS. Slow model waits are sped up, with the real time shown on screen.
+▶ **[Watch the full 6-minute narrated walkthrough](docs/demo.mp4)** (MP4, 8 MB). The preview above loops the live part, sped up. The full video covers the stack and architecture, how each assistant works, both of them running live, the safety design, the evaluation harness, results and lessons. Narration is Kokoro TTS. Slow model waits are sped up, with the real time shown on screen.
 
 ## What the assistant does
 
