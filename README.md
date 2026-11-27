@@ -9,7 +9,11 @@ This project builds a returns-and-exchanges assistant for a fictional clothing s
 
 Both versions use the same model, data, store policy and backend services. The same scenarios are run through both and graded on what ended up in the database, not on what the assistant said. If the simpler workflow wins, that counts as a result too.
 
-> **Status: both assistants built and evaluated.** On 51 held-out conversations each, both reached the right final state about equally often (workflow 45, agent 44). The workflow was cleaner (45 vs 31 clean), about 15× faster and used about 32× fewer prompt tokens. See [RESULTS.md](RESULTS.md), [FAILURES.md](FAILURES.md) and [DECISIONS.md](DECISIONS.md). The demo UI and the harness experiment are next.
+> **Status: both assistants built and evaluated.** On 51 held-out conversations each, both reached the right final state about equally often (workflow 45, agent 44). The workflow was cleaner (45 vs 31 clean), about 15× faster and used about 32× fewer prompt tokens. See [RESULTS.md](RESULTS.md), [FAILURES.md](FAILURES.md) and [DECISIONS.md](DECISIONS.md). The harness experiment is next.
+
+[![Watch the 6-minute technical walkthrough](docs/demo-poster.jpg)](docs/demo.mp4)
+
+A 6-minute walkthrough of the stack and architecture, how each assistant works, both of them running live, the safety design, the evaluation harness, results and lessons. Narration is Kokoro TTS. Slow model waits are sped up, with the real time shown on screen.
 
 ## What the assistant does
 
