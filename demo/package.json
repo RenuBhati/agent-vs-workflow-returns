@@ -1,0 +1,8 @@
+{
+  "name": "agent-vs-workflow-returns-demo",
+  "private": true,
+  "description": "Records the demo page and screenshots the slides for the walkthrough video.",
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

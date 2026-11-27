@@ -13,7 +13,7 @@ Both versions use the same model, data, store policy and backend services. The s
 
 [![Both assistants running live: the workflow, the agent, and a typed “yes” that commits nothing. Click for the full narrated walkthrough.](docs/demo-preview.webp)](docs/demo.mp4)
 
-▶ **[Watch the full 7-minute narrated walkthrough](docs/demo.mp4)** (MP4, 8 MB). The preview above loops the live part, sped up. The full video covers the stack and architecture, how each assistant works, both of them running live, the safety design, the evaluation harness, results, the tool-design experiment and lessons. Narration is Kokoro TTS. Slow model waits are sped up, with the real time shown on screen.
+▶ **[Watch the full 7-minute narrated walkthrough](docs/demo.mp4)** (MP4, 8 MB). The preview above loops the live part, sped up. The full video covers the stack and architecture, how each assistant works, both of them running live, the safety design, the evaluation harness, results, the tool-design experiment and lessons. Narration is Kokoro TTS. Slow model waits are sped up, with the real time shown on screen. The scripts that make it are in [`demo/`](demo/README.md).
 
 ## What the assistant does
 

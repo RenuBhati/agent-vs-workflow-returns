@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slides</title>
+<style>
+  :root { --bg: #f6f5f2; --panel: #fff; --ink: #1d1d1b; --muted: #6b6a66; --line: #dedbd4;
+          --accent: #2f5d50; --soft: #e9efe9; --warn: #9a3b2e; --warnsoft: #f6e7e3;
+          --mono: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #888; font: 20px/1.45 system-ui, -apple-system, sans-serif; color: var(--ink); }
+  .slide { width: 1280px; height: 800px; background: var(--bg); padding: 64px 80px; position: relative;
+           display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
+  .kicker { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: 44px; line-height: 1.15; margin: 10px 0 18px; letter-spacing: -.01em; }
+  h2 { font-size: 34px; margin: 8px 0 26px; letter-spacing: -.01em; }
+  p.lead { font-size: 23px; color: #3b3a37; max-width: 900px; margin: 0 0 14px; }
+  .muted { color: var(--muted); }
+  .foot { position: absolute; left: 80px; right: 80px; bottom: 34px; font-size: 14px; color: var(--muted);
+          display: flex; justify-content: space-between; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; flex: 1; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px; }
+  .box h3 { margin: 0 0 10px; font-size: 19px; }
+  .box ul { margin: 0; padding-left: 20px; } .box li { margin: 5px 0; font-size: 18px; }
+  code, pre { font-family: var(--mono); }
+  pre { background: #1f2421; color: #e6ece8; border-radius: 12px; padding: 18px 20px; font-size: 15.5px; line-height: 1.5;
+        margin: 0; white-space: pre; }
+  pre .c { color: #8fa69a; } pre .k { color: #9fd3bd; } pre .s { color: #f0c98b; }
+  .tag { display: inline-block; font: 13px var(--mono); background: var(--soft); color: var(--accent);
+         border-radius: 6px; padding: 2px 8px; margin: 3px 4px 3px 0; }
+  /* stack */
+  .stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .stack .box b { display: block; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .stack .box span { font-size: 19px; }
+  /* architecture */
+  .arch { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: -10px; }
+  .arch .node { padding: 8px 20px; }
+  .row { display: flex; gap: 22px; justify-content: center; }
+  .node { background: var(--panel); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 22px;
+          text-align: center; min-width: 230px; font-size: 18px; }
+  .node small { display: block; color: var(--muted); font-size: 14px; }
+  .node.hl { border-color: var(--accent); background: var(--soft); }
+  .node.db { border-color: var(--accent); border-width: 2px; }
+  .arrow { color: var(--muted); font-size: 18px; line-height: 1; }
+  .side { position: absolute; right: 80px; top: 230px; width: 270px; font-size: 16px; color: #3b3a37; }
+  .side div { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; margin-bottom: 16px; }
+  /* flow */
+  .flow { display: flex; align-items: stretch; gap: 10px; margin: 6px 0 22px; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+  .flow .step b { display: block; font-size: 17px; margin-bottom: 4px; }
+  .flow .to { align-self: center; color: var(--muted); }
+  .layers { display: flex; flex-direction: column; gap: 12px; }
+  .layer { display: grid; grid-template-columns: 240px 1fr; gap: 20px; background: var(--panel); border: 1px solid var(--line);
+           border-radius: 12px; padding: 14px 20px; align-items: center; font-size: 18px; }
+  .layer b { font-size: 19px; }
+  .big { font-size: 46px; font-weight: 700; color: var(--accent); line-height: 1; }
+  table { border-collapse: collapse; width: 100%; font-size: 21px; }
+  td, th { padding: 11px 16px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { color: var(--muted); font-weight: 500; font-size: 17px; } td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.bad td { color: var(--warn); }
+  .lesson { display: grid; grid-template-columns: 54px 1fr; gap: 16px; margin-bottom: 22px; }
+  .lesson .num { font-size: 30px; font-weight: 700; color: var(--accent); }
+  .lesson b { font-size: 22px; display: block; margin-bottom: 3px; } .lesson span { color: #4a4945; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<!-- 1 title -->
+<section class="slide" id="s-title" style="justify-content:center">
+  <div class="kicker">Technical walkthrough</div>
+  <h1 style="font-size:60px">Agent vs workflow</h1>
+  <p class="lead">Clothing returns and exchanges, built twice on the same model, tools and database rules,
+     then measured on the same scenarios.</p>
+  <p class="lead muted">Does a tool-using agent beat a fixed workflow, and what does it cost?</p>
+  <div class="foot"><span>github.com/RenuBhati/agent-vs-workflow-returns</span><span>qwen3.5:4b · local · 8 GB MacBook Air</span></div>
+</section>
+
+<!-- 2 stack -->
+<section class="slide" id="s-stack">
+  <div class="kicker">Stack</div>
+  <h2>Deliberately plain, every step in my own code</h2>
+  <div class="stack">
+    <div class="box"><b>API</b><span>Python 3.12 · FastAPI · Pydantic for every input and output</span></div>
+    <div class="box"><b>Data</b><span>Postgres 16 · SQLAlchemy Core · plain-SQL Alembic migrations</span></div>
+    <div class="box"><b>Model</b><span>Qwen3.5 4B via Ollama · pinned digest · temperature 0.2, fixed seed</span></div>
+    <div class="box"><b>Assistants</b><span>No agent framework · a ~150-line agent loop and a state machine</span></div>
+    <div class="box"><b>Evals</b><span>Scenario YAML · rule-based shopper · grader on database state</span></div>
+    <div class="box"><b>Quality</b><span>207 pytest tests · ruff · GitHub Actions on every push · uv</span></div>
+  </div>
+  <p class="lead muted" style="margin-top:26px;font-size:19px">Model evals run by hand: they are slow and vary between runs, so they never gate a merge.</p>
+</section>
+
+<!-- 3 architecture -->
+<section class="slide" id="s-arch">
+  <div class="kicker">Architecture</div>
+  <h2>Two assistants, one set of tools, one source of truth</h2>
+  <div class="arch" style="margin-right:300px">
+    <div class="row"><div class="node">Demo page<small>a person chatting</small></div><div class="node">Eval runner<small>simulated shopper</small></div></div>
+    <div class="arrow">↓</div>
+    <div class="row"><div class="node" style="min-width:480px">FastAPI<small>sessions · messages · Confirm button</small></div></div>
+    <div class="arrow">↓</div>
+    <div class="row"><div class="node hl">Fixed workflow<small>model reads, code decides</small></div><div class="node hl">Agent loop<small>model decides</small></div></div>
+    <div class="arrow">↓</div>
+    <div class="row"><div class="node" style="min-width:480px">Six tools<small>list_orders · check_options · propose · commit_action · request_review · get_action_status</small></div></div>
+    <div class="arrow">↓</div>
+    <div class="row"><div class="node" style="min-width:480px">Services<small>the only code that writes</small></div></div>
+    <div class="arrow">↓</div>
+    <div class="row"><div class="node db" style="min-width:480px">Postgres<small>constraints enforce the critical rules</small></div></div>
+  </div>
+  <div class="side">
+    <div>The only difference between the two is <b>who chooses the next step</b>.</div>
+    <div>Same model, tools, services, data and policy.</div>
+    <div>Every tool call and model call is logged with tokens and time.</div>
+  </div>
+</section>
+
+<!-- 4 workflow -->
+<section class="slide" id="s-workflow">
+  <div class="kicker">Inside the fixed workflow</div>
+  <h2>The model only reads; Python decides</h2>
+  <div class="grid2">
+    <div>
+      <pre><span class="c"># one model call per message, structured output</span>
+<span class="k">class</span> Extraction(BaseModel):
+    intent: Literal[<span class="s">"return"</span>, <span class="s">"exchange"</span>,
+                    <span class="s">"review"</span>, <span class="s">"nothing"</span>] | None
+    items: list[int]      <span class="c"># numbers from the list shown</span>
+    size: str | None      <span class="c"># e.g. "M"</span>
+    yes: bool | None      <span class="c"># answer to a yes/no question</span>
+    wants_person: bool</pre>
+      <p class="muted" style="font-size:17px;margin-top:14px">Ollama's <code>format</code> takes the JSON schema, so the reply always parses.</p>
+    </div>
+    <div class="layers">
+      <div class="layer" style="grid-template-columns:1fr"><span><b>1 · Merge</b> the extraction into the session state: corrections, a stray "yes", off-topic.</span></div>
+      <div class="layer" style="grid-template-columns:1fr"><span><b>2 · Pick the item.</b> Accept the model's pick only if the message names it; otherwise ask <span class="tag">which_item</span></span></div>
+      <div class="layer" style="grid-template-columns:1fr"><span><b>3 · Check</b> policy and stock; ask <span class="tag">which_size</span> or offer <span class="tag">choose_alternative</span></span></div>
+      <div class="layer" style="grid-template-columns:1fr"><span><b>4 · Propose</b>, then wait for the Confirm button <span class="tag">confirm</span></span></div>
+    </div>
+  </div>
+  <div class="foot"><span>~525 prompt tokens and ~1.8 model calls per conversation</span><span>app/assistants/workflow.py</span></div>
+</section>
+
+<!-- 5 agent -->
+<section class="slide" id="s-agent">
+  <div class="kicker">Inside the agent</div>
+  <h2>The model decides, one tool call at a time</h2>
+  <div class="flow">
+    <div class="step"><b>Shopper message</b>appended to the history kept in <code>sessions.state</code></div><div class="to">→</div>
+    <div class="step"><b>Model step</b>system prompt + 7 tool schemas + full history</div><div class="to">→</div>
+    <div class="step"><b>Tool call</b>run through the same tool layer; result appended</div><div class="to">↻</div>
+    <div class="step"><b>respond_to_shopper</b>text + a question tag ends the turn</div>
+  </div>
+  <div class="grid2">
+    <div class="box"><h3>Rules of the loop</h3><ul>
+      <li>Up to 8 model steps per turn, then hand off to a person</li>
+      <li>Each step gets its own seed; a bad call retries with seed + 1</li>
+      <li>Model errors come back as data, logged, never a crash</li>
+      <li>Commit only after the server reports the Confirm click</li></ul></div>
+    <div class="box"><h3>Same tags as the workflow</h3>
+      <span class="tag">which_item</span><span class="tag">which_size</span><span class="tag">which_action</span><span class="tag">confirm</span><span class="tag">choose_alternative</span><span class="tag">offer_review</span><span class="tag">other</span><span class="tag">none</span>
+      <p style="font-size:17px;margin:12px 0 0" class="muted">The reply tool isn't a business tool, so tool counts stay comparable, and both assistants are graded the same way.</p></div>
+  </div>
+  <div class="foot"><span>~17,000 prompt tokens and ~6.7 model calls per conversation</span><span>app/assistants/agent.py</span></div>
+</section>
+
+<!-- 6 safety -->
+<section class="slide" id="s-safety">
+  <div class="kicker">Safety in layers</div>
+  <h2>The model can propose anything. It can't commit it.</h2>
+  <div class="layers">
+    <div class="layer"><b>Versioned proposal</b><span>Each change of plan is a new immutable row; the shopper confirms one exact version.</span></div>
+    <div class="layer"><b>Confirm is a button</b><span>The server records the click. Typing "yes" is never consent; commit without it is refused and logged.</span></div>
+    <div class="layer"><b>Commit rechecks</b><span>Policy and stock are checked again: the day or the stock may have changed since the proposal.</span></div>
+    <div class="layer"><b>Database rules</b><span><code>UPDATE … WHERE stock &gt; 0</code> plus a CHECK; a partial unique index allows one active action per item.</span></div>
+  </div>
+  <div style="display:flex;gap:40px;margin-top:22px;align-items:center">
+    <div class="big">25 / 25</div>
+    <div style="font-size:18px;color:#3b3a37">rounds of two threads racing for the last shirt ended with exactly one winner.<br>
+      <span class="muted">In 24, both passed the recheck; the conditional update stopped the loser.</span></div>
+  </div>
+</section>
+
+<!-- 7 evals -->
+<section class="slide" id="s-evals">
+  <div class="kicker">Evaluation harness</div>
+  <h2>Same shopper, same scenarios, graded on what actually changed</h2>
+  <div class="grid2">
+    <div class="box"><h3>Scenarios</h3><ul>
+      <li>30 scenarios × 3 wordings each</li>
+      <li>13 dev for tuning · 17 held-out, run once after freezing</li>
+      <li>Ambiguous items, out of stock, policy edges, injection, another shopper's order</li>
+      <li>Scripted moves: corrections, cancels, typing "yes"</li></ul></div>
+    <div class="box"><h3>Simulated shopper</h3><ul>
+      <li>Rule-based, no model: identical for both assistants</li>
+      <li>Answers from private facts it never reveals to the grader</li>
+      <li>Presses Confirm only on what it actually wants</li></ul></div>
+    <div class="box"><h3>Grader</h3><ul>
+      <li>Final state: actions, review cases, stock deltas</li>
+      <li>Plus what state can't show: silent switch, false success, refused writes, loops</li></ul></div>
+    <div class="box"><h3>Grader is tested too</h3><ul>
+      <li>Scripted conversations with known mistakes must be labelled correctly</li>
+      <li>Every proposal judged against what the shopper wanted at that moment</li></ul></div>
+  </div>
+</section>
+
+<!-- 8 results -->
+<section class="slide" id="s-results">
+  <div class="kicker">Held-out results</div>
+  <h2>51 conversations each, frozen, run once</h2>
+  <table>
+    <tr><th></th><th class="n">Workflow</th><th class="n">Agent</th></tr>
+    <tr><td>Right final state</td><td class="n">45</td><td class="n">44</td></tr>
+    <tr><td>Clean (no other problem)</td><td class="n">45</td><td class="n">31</td></tr>
+    <tr class="bad"><td>Claimed success with nothing done</td><td class="n">0</td><td class="n">1</td></tr>
+    <tr><td>Seconds per conversation</td><td class="n">8.7</td><td class="n">126.6</td></tr>
+    <tr><td>Model calls per conversation</td><td class="n">1.8</td><td class="n">6.7</td></tr>
+    <tr><td>Prompt tokens per conversation</td><td class="n">525</td><td class="n">17,005</td></tr>
+  </table>
+  <div class="foot"><span>Same accuracy on final state · the workflow was cleaner, ~15× faster, ~32× fewer tokens</span><span>RESULTS.md</span></div>
+</section>
+
+<!-- 8b experiment -->
+<section class="slide" id="s-exp">
+  <div class="kicker">Follow-up experiment · one change</div>
+  <h2>check_options also returns the next step</h2>
+  <table>
+    <tr><th>Agent, 36 fresh conversations</th><th class="n">tools-v1</th><th class="n">tools-v2</th></tr>
+    <tr><td>Right final state</td><td class="n">28</td><td class="n">31</td></tr>
+    <tr><td>Clean (no other problem)</td><td class="n">10</td><td class="n">17</td></tr>
+    <tr><td>Asked the question it needed to</td><td class="n">13 / 30</td><td class="n">19 / 30</td></tr>
+    <tr class="bad"><td>Filed a review the shopper declined</td><td class="n">4 / 9</td><td class="n">2 / 9</td></tr>
+    <tr><td>Prompt tokens per conversation</td><td class="n">13.9k</td><td class="n">13.6k</td></tr>
+  </table>
+  <div class="foot"><span>Same model, prompt and scenarios · new exp split, not held-out · workflow: 36 / 36</span><span>EXPERIMENT.md</span></div>
+</section>
+
+<!-- 9 learnings 1 -->
+<section class="slide" id="s-learn1">
+  <div class="kicker">What I learned · design</div>
+  <h2>Where the model belongs</h2>
+  <div class="lesson"><div class="num">1</div><div><b>A small model is a good reader and a weak planner.</b>
+    <span>Given only "read this message", it was right almost every time. Asked to plan, call tools, tag questions and pick review reasons, it drifted.</span></div></div>
+  <div class="lesson"><div class="num">2</div><div><b>Put safety in the services and the database, not the prompt.</b>
+    <span>Under prompt injection, neither assistant committed anything wrong, because no prompt can bypass a constraint.</span></div></div>
+  <div class="lesson"><div class="num">3</div><div><b>The database can't stop the model from lying.</b>
+    <span>The agent once told a shopper "your refund is done" with nothing committed. The workflow can't: its success text exists only after a commit returns a reference.</span></div></div>
+  <div class="lesson"><div class="num">4</div><div><b>Code failures are cheaper than prompt failures.</b>
+    <span>The workflow's 6 misses came from 2 missing checks. The agent's came from about 6 different behaviours, each showing up some of the time.</span></div></div>
+</section>
+
+<!-- 10 learnings 2 -->
+<section class="slide" id="s-learn2">
+  <div class="kicker">What I learned · engineering</div>
+  <h2>Small things that cost the most time</h2>
+  <div class="lesson"><div class="num">5</div><div><b>Tools with no parameters broke tool calling.</b>
+    <span>The model emitted malformed calls and Ollama returned HTTP 500. An optional <code>note</code> field ("why you are calling this") fixed it; it's stripped before the call runs.</span></div></div>
+  <div class="lesson"><div class="num">6</div><div><b>A retry with the same seed is the same failure.</b>
+    <span>Retries use seed + 1, and each agent step gets its own seed offset.</span></div></div>
+  <div class="lesson"><div class="num">7</div><div><b>On 8 GB, memory is the bottleneck.</b>
+    <span>Docker's VM reserved 4 GB next to the model. Cutting it to 1.5 GB took an agent step from 21–115 s to a steady ~35 s.</span></div></div>
+  <div class="lesson"><div class="num">8</div><div><b>Evals: grade the state, freeze first, publish the misses.</b>
+    <span>Tune on dev only, run held-out once, and write up every failure, including where the simulator itself was at fault.</span></div></div>
+</section>
+
+<!-- 11 close -->
+<section class="slide" id="s-close" style="justify-content:center">
+  <div class="kicker">Thanks for watching</div>
+  <h1>Code, results and every failure</h1>
+  <p class="lead">github.com/RenuBhati/agent-vs-workflow-returns</p>
+  <p class="lead muted" style="font-size:19px">RESULTS.md · DECISIONS.md · FAILURES.md · make serve to try it locally</p>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Downloads and generated files (see README.md)
+.venv/
+node_modules/
+models/
+rec/
+slides/
+concat.txt
+preview.txt
+narration.wav
+demo.mp4
+demo-preview.webp
