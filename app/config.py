@@ -22,5 +22,8 @@ class Settings(BaseSettings):
     llm_num_ctx: int = 4096
     llm_timeout_s: int = 300
 
+    # Tool design under test (harness experiment). tools-v1 is what RESULTS.md measured.
+    toolset: str = "tools-v1"
+
 
 settings = Settings()

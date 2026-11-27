@@ -1,0 +1,23 @@
+id: exp-jumper-return-accept-review
+split: exp
+fixture: two_shirts_v1
+persona: chloe
+opening: Hi, I want to send back the grey jumper I bought last week.
+wordings:
+- Can I return my wool jumper?
+- I'd like my money back for the grey jumper, please.
+shopper_facts:
+  means_units:
+  - u_chloe_jumper
+  describes_item_as: the grey wool jumper
+  wants: return
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_chloe_jumper
+  review_reason: final_sale_dispute
+  needs_clarification:
+  - offer_review
+notes: 'Final-sale item: explain, offer a person, and file a final_sale_dispute review only after the
+  yes.'

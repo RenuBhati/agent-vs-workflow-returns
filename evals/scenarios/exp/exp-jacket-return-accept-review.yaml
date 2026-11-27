@@ -1,0 +1,22 @@
+id: exp-jacket-return-accept-review
+split: exp
+fixture: two_shirts_v1
+persona: chloe
+opening: The rain jacket doesn't fit. How do I return it?
+wordings:
+- I want to return the black jacket I ordered.
+- Can I get a refund on my rain jacket?
+shopper_facts:
+  means_units:
+  - u_chloe_jacket
+  describes_item_as: the black rain jacket
+  wants: return
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_chloe_jacket
+  review_reason: no_delivery_record
+  needs_clarification:
+  - offer_review
+notes: 'No delivery record: offer a person and file no_delivery_record only after the yes.'

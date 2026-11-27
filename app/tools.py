@@ -9,7 +9,10 @@ confirm and decline are deliberately missing: only the shopper's button can
 confirm, through the API. The model can propose and commit, never confirm.
 
 TOOLSET_VERSION is recorded on each session. The harness experiment
-(milestone 5) changes the descriptions here and bumps the version.
+switches it with the TOOLSET setting:
+- tools-v1: check_options reports eligibility, the policy reason and sizes in stock.
+- tools-v2: the same, plus next_step: which question to ask the shopper next and,
+  for a review, which reason to file it under. Nothing else changes.
 """
 
 import json
@@ -24,6 +27,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import text
 
+from app.config import settings
 from app.policy import Action
 from app.services.actions import commit_action, get_action_status
 from app.services.context import Ctx
@@ -32,7 +36,10 @@ from app.services.orders import UnitView, check_options, list_orders
 from app.services.proposals import propose
 from app.services.review import ReviewReason, request_review
 
-TOOLSET_VERSION = "tools-v1"
+TOOLSETS = ("tools-v1", "tools-v2")
+TOOLSET_VERSION = settings.toolset
+if TOOLSET_VERSION not in TOOLSETS:
+    raise ValueError(f"unknown toolset {TOOLSET_VERSION!r}; expected one of {TOOLSETS}")
 
 log = logging.getLogger(__name__)
 
@@ -95,9 +102,47 @@ def _list_orders(ctx: Ctx, a: NoArgs) -> dict:
 
 def _check_options(ctx: Ctx, a: CheckOptionsArgs) -> dict:
     unit, d = check_options(ctx, a.order_unit_id, a.action, a.size)
-    return {"unit": unit_json(unit), "eligible": d.eligible,
-            "reason": d.reason.value if d.reason else None,
-            "sizes_in_stock": d.sizes_in_stock}
+    out = {"unit": unit_json(unit), "eligible": d.eligible,
+           "reason": d.reason.value if d.reason else None,
+           "sizes_in_stock": d.sizes_in_stock}
+    if TOOLSET_VERSION == "tools-v2":
+        out["next_step"] = next_step(unit, d, a)
+    return out
+
+
+# tools-v2: a policy "no" that a person may still look at, and the review reason to use.
+REVIEW_FOR = {
+    "already_actioned": ("action_conflict", "This item already has a {active} (reference {ref})."),
+    "final_sale": ("final_sale_dispute", "This item was bought as final sale."),
+    "needs_review": ("no_delivery_record", "There is no delivery record for this item."),
+    "expired": ("policy_exception", "The 30-day window ended on {last_day}."),
+}
+
+
+def next_step(unit: UnitView, d, a: CheckOptionsArgs) -> dict:
+    """What to do with this answer: the question to ask next, and how to finish it."""
+    reason = d.reason.value if d.reason else None
+    if reason in REVIEW_FOR:
+        review_reason, why = REVIEW_FOR[reason]
+        why = why.format(active=unit.active_action, ref=unit.active_reference,
+                         last_day=_iso(d.last_day))
+        return {"ask": "offer_review", "review_reason": review_reason,
+                "do": f"{why} Do not propose. Explain this to the shopper and offer to pass it to "
+                      f"a person (question_kind offer_review). Only if they say yes, call "
+                      f"request_review with reason {review_reason}. If they say no, finish (none)."}
+    if reason in ("same_size", "unknown_size", "out_of_stock"):
+        sizes = ", ".join(d.sizes_in_stock) or "none"
+        return {"ask": "choose_alternative",
+                "do": f"Size {a.size} can't be used ({reason}). Do not propose yet. Offer the sizes "
+                      f"in stock ({sizes}), a return, or leaving it (question_kind "
+                      f"choose_alternative), and wait for the shopper to choose."}
+    if a.action is Action.EXCHANGE and not a.size:
+        return {"ask": "which_size",
+                "do": f"Ask which size they want, listing the sizes in stock "
+                      f"({', '.join(d.sizes_in_stock) or 'none'}) (question_kind which_size)."}
+    return {"ask": "confirm",
+            "do": "Eligible. Call propose now, then ask the shopper to press the Confirm button "
+                  "(question_kind confirm)."}
 
 
 def _propose(ctx: Ctx, a: ProposeArgs) -> dict:
@@ -147,7 +192,8 @@ TOOLS: dict[str, Tool] = {t.name: t for t in [
          NoArgs, _list_orders, writes=False),
     Tool("check_options",
          "Check whether one item can be returned or exchanged today, and which other sizes "
-         "are in stock. Changes nothing. Use it before proposing.",
+         "are in stock. Changes nothing. Use it before proposing."
+         + (" Follow its next_step." if TOOLSET_VERSION == "tools-v2" else ""),
          CheckOptionsArgs, _check_options, writes=False),
     Tool("propose",
          "Create the proposal the shopper will be asked to confirm. Replaces any earlier "

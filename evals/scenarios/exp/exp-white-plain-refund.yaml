@@ -1,0 +1,20 @@
+id: exp-white-plain-refund
+split: exp
+fixture: two_shirts_v1
+persona: amira
+opening: I'd like a refund for the white Oxford shirt.
+wordings:
+- Please return my white shirt.
+- Can I send back the white Oxford?
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: return
+  accepts_review: true
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_white
+  action: return
+notes: A plain return, no questions needed.

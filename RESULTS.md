@@ -95,6 +95,10 @@ Correct out of 3, with clean in brackets.
 - One small local model. A larger model would likely narrow the gap in clean conversations, though not the cost gap.
 - The grader judges by question tags, so a correct question with the wrong tag counts against the agent. The shopper reads the text of `other` questions, so a wrong tag does not stall the conversation.
 
+## Follow-up
+
+[EXPERIMENT.md](EXPERIMENT.md) tests one fix for the agent's policy "no" failures: `check_options` returns the next step to take. Measured on a fresh split, not on held-out.
+
 ## Reproduce
 
 ```bash

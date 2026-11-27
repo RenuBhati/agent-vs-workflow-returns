@@ -1,0 +1,19 @@
+id: exp-jacket-return-decline-review
+split: exp
+fixture: two_shirts_v1
+persona: chloe
+opening: Please return the black rain jacket, it came yesterday.
+wordings:
+- I'd like to send the rain jacket back.
+- Return my black jacket, please.
+shopper_facts:
+  means_units:
+  - u_chloe_jacket
+  describes_item_as: the black rain jacket
+  wants: return
+  accepts_review: false
+expected:
+  outcome: no_action
+  needs_clarification:
+  - offer_review
+notes: 'No delivery record: offer a person; the shopper declines, so nothing is filed.'

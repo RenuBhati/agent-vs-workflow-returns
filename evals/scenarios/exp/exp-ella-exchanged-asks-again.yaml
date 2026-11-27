@@ -1,0 +1,29 @@
+id: exp-ella-exchanged-asks-again
+split: exp
+fixture: two_shirts_v1
+persona: ella
+setup:
+- persona: ella
+  unit: u_ella_blue
+  action: exchange
+  size: M
+opening: Can I swap my blue Oxford for a large?
+wordings:
+- I'd like the blue shirt in size L instead.
+- Please exchange my blue Oxford for a large.
+shopper_facts:
+  means_units:
+  - u_ella_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: L
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_ella_blue
+  review_reason: action_conflict
+  needs_clarification:
+  - offer_review
+notes: 'The shirt already has an exchange to M: explain, offer a person, file action_conflict after the
+  yes.'

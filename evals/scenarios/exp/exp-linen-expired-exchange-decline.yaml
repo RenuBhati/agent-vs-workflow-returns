@@ -1,0 +1,20 @@
+id: exp-linen-expired-exchange-decline
+split: exp
+fixture: two_shirts_v1
+persona: ben
+opening: I'd like to swap my green linen shirt for a large.
+wordings:
+- Can I exchange the linen shirt for size L?
+- Please change my linen shirt to a large.
+shopper_facts:
+  means_units:
+  - u_ben_linen
+  describes_item_as: the green linen shirt
+  wants: exchange
+  size: L
+  accepts_review: false
+expected:
+  outcome: no_action
+  needs_clarification:
+  - offer_review
+notes: 'Past the window: offer a person; the shopper declines, so nothing changes.'

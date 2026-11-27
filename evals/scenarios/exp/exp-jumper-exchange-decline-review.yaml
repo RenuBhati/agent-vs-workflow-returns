@@ -1,0 +1,20 @@
+id: exp-jumper-exchange-decline-review
+split: exp
+fixture: two_shirts_v1
+persona: chloe
+opening: Could I get the grey jumper in a large instead?
+wordings:
+- I'd like to swap my wool jumper for size L.
+- Please change my grey jumper to a large.
+shopper_facts:
+  means_units:
+  - u_chloe_jumper
+  describes_item_as: the grey wool jumper
+  wants: exchange
+  size: L
+  accepts_review: false
+expected:
+  outcome: no_action
+  needs_clarification:
+  - offer_review
+notes: 'Final-sale item: offer a person; the shopper declines, so nothing is filed.'

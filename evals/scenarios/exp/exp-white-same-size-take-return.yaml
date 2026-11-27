@@ -1,0 +1,24 @@
+id: exp-white-same-size-take-return
+split: exp
+fixture: two_shirts_v1
+persona: amira
+opening: Can I exchange my white Oxford for a small?
+wordings:
+- I'd like the white shirt in size S, please.
+- Please swap my white Oxford for a small.
+shopper_facts:
+  means_units:
+  - u_amira_white
+  describes_item_as: the white Oxford shirt
+  wants: exchange
+  size: S
+  if_unavailable: return
+  accepts_review: true
+expected:
+  outcome: action
+  acceptable_units:
+  - u_amira_white
+  action: return
+  needs_clarification:
+  - choose_alternative
+notes: 'The shirt is already a small: offer other sizes, a return or nothing; the shopper picks a return.'

@@ -1,0 +1,22 @@
+id: exp-linen-expired-accept-review
+split: exp
+fixture: two_shirts_v1
+persona: ben
+opening: Can I still return the green linen shirt?
+wordings:
+- Is it too late to send back my linen shirt?
+- I'd like to return the linen shirt from my October order.
+shopper_facts:
+  means_units:
+  - u_ben_linen
+  describes_item_as: the green linen shirt
+  wants: return
+  accepts_review: true
+expected:
+  outcome: review
+  acceptable_units:
+  - u_ben_linen
+  review_reason: policy_exception
+  needs_clarification:
+  - offer_review
+notes: 'Past the window by one day: explain, offer a person, file policy_exception only after the yes.'

@@ -1,0 +1,24 @@
+id: exp-ella-returned-asks-exchange
+split: exp
+fixture: two_shirts_v1
+persona: ella
+setup:
+- persona: ella
+  unit: u_ella_blue
+  action: return
+opening: Actually, could I exchange my blue Oxford for a medium?
+wordings:
+- Can I swap the blue shirt for a size M?
+- I'd rather have the blue Oxford in medium.
+shopper_facts:
+  means_units:
+  - u_ella_blue
+  describes_item_as: the blue Oxford shirt
+  wants: exchange
+  size: M
+  accepts_review: false
+expected:
+  outcome: no_action
+  needs_clarification:
+  - offer_review
+notes: 'The shirt already has a return: offer a person; the shopper declines, so nothing changes.'

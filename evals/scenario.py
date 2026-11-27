@@ -96,7 +96,7 @@ class SetupAction(Strict):
 
 class Scenario(Strict):
     id: str
-    split: Literal["dev", "heldout"]
+    split: Literal["dev", "heldout", "exp"]   # exp: harness experiment, fresh
     fixture: str
     persona: str
     opening: str
